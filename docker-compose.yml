@@ -1,0 +1,19 @@
+version: '3'
+services: 
+  backend:
+    build:
+      context:  ./ib-visual-backend
+      dockerfile: Dockerfile
+    ports: 
+      - "6789:6789"
+    environment: 
+      IBHOST: "192.168.2.226"
+      IBPORT: "4002"
+  frontend:
+    build:
+      context:  ./ib-visual-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+  
+
