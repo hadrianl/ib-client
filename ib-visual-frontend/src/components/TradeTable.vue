@@ -1,5 +1,5 @@
 <template>
-    <Table :height="height" :columns="columns" :data="tradesArr" border >
+    <Table :height="height" :columns="columns" :data="tradesArr" :row-class-name="rowClassName" border stripe >
         <template slot-scope="{ row }" slot="handle">
             <Button v-if="done_status.indexOf(row.orderStatus.status) == -1" 
             type="error" 
@@ -44,9 +44,9 @@ export default {
                      return h('div', params.row.order.permId)
                  }
                 },
-                {title: 'cId',
+                {title: 'c',
                 //  key: 'order.clientId',
-                 width: 50,
+                 width: 30,
                  align: 'left',
                  render: (h, params) => {
                      return h('div', params.row.order.clientId)
@@ -78,15 +78,15 @@ export default {
                 },
                 {title: 'filled',
                 // key: 'orderStatus.filled',
-                width: 100,
+                width: 70,
                 align: 'left',
                 render: (h, params) => {
                      return h('div', params.row.orderStatus.filled)
                  }
                 },
-                {title: 'totalQuantity',
+                {title: 'vol',
                 // key: 'order.totalQuantity',
-                width: 100,
+                width: 70,
                 align: 'left',
                 render: (h, params) => {
                      return h('div', params.row.order.totalQuantity)
@@ -110,8 +110,8 @@ export default {
                 },
                 {title: 'status',
                 // key: 'orderStatus.status',
-                width: 100,
-                align: 'left',
+                width: 120,
+                align: 'center',
                 render: (h, params) => {
                      return h('div', params.row.orderStatus.status)
                  }
@@ -181,7 +181,33 @@ export default {
     methods: {
         cancelOrder(order) {
             this.$ibws.send({'action':'cancel_order', 'order': order})
+        },
+        rowClassName(row) {
+            switch (row.orderStatus.status){
+                case 'Filled':
+                    return 'table-filled-row'
+                case 'Submitted':
+                    return 'table-submitted-row'
+                case 'PreSubmitted':
+                    return 'table-presubmitted-row'
+                default:
+                    return ''
+            }
         }
     }
 }
 </script>
+<style>
+    .ivu-table .table-filled-row td{
+        background-color: #ff6600;
+        color: #fff;
+    }
+    .ivu-table .table-submitted-row td{
+        background-color: #2db7f5;
+        color: #fff;
+    }
+    .ivu-table .table-presubmitted-row td{
+        background-color: #187;
+        color: #fff;
+    }
+</style>

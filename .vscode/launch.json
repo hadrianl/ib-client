@@ -9,7 +9,7 @@
             "name": "Python: 当前文件",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "D:\\ib-client\\ib-visual-backend\\main.py",
             "console": "integratedTerminal",
             "args": ["192.168.2.226", "4002"]
         }

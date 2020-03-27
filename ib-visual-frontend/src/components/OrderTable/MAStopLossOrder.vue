@@ -1,18 +1,15 @@
 <template>
     <Form :label-width="60" label-position="left">
-        <ContractItem ref="contract" :contractsList="contractsList" />
+        <ContractItem ref="contract" :contractsList=contractsList />
         <FormItem label="Size">
             <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
         </FormItem>
-        <FormItem label="Price">
-            <InputNumber v-model="limitPrice" disabled :max="maxPrice" :min="minPrice" :step="priceTick" style="width: auto"></InputNumber>
-        </FormItem>
-        <FormItem label="StopPrice" inline>
-            <InputNumber v-model="stopPrice" :max="maxPrice" :min="minPrice" :step="priceTick"></InputNumber>
+        <FormItem label="Trigger" inline>
+            <Input v-model="trigger" placeholder="触发类型..." />
             <Icon v-if="action == 'BUY'" type="ios-arrow-round-up" color="red" />
             <Icon v-else-if="action == 'SELL'" type="ios-arrow-round-down" color="green" />
             <Icon v-else type="ios-help" />
-            <InputNumber v-model="offset"   :max="200" :min="minPrice" :step="priceTick" ></InputNumber>
+            <InputNumber v-model="offset" :max="maxOffset" :min="minOffset" :step="priceTick" ></InputNumber>
         </FormItem>
         <FormItem label="Action">
             <RadioGroup v-model="action" type="button" >
@@ -29,7 +26,8 @@
 <script>
 import {Order} from '../../plugins/datastructure.js'
 import ContractItem from '../ContractItem.vue'
-// const patt = /^([A-Z]{3,})(\d{4})$/i
+
+
 export default {
     components:{
         ContractItem
@@ -37,15 +35,13 @@ export default {
     data() {
 			return {
                 split: 0.3,
-                selectedTab: 'accounts', // accounts positions orders trades
                 action: "",
 				volume: 1,
                 priceTick: 1,
-                stopPrice: 0,
+                trigger: '',
                 offset: 0,
-				priceDecs: 0,
-                maxPrice: Infinity,
-                minPrice: 0,
+                maxOffset: 200,
+                minOffset: 0,
 			};
         },
     props:{
@@ -85,17 +81,26 @@ export default {
                     duration: 5
                 })
                 return
-
             }
 
+            const options = this.getTriggerOptions()
+
+            if (!options) {
+                this.$Notice.error({
+                    title: 'order Failed!',
+                    desc: '请填写正确触发类型',
+                    duration: 5
+                })
+                return
+            }
+
+            
             var order = new Order()
             order.orderType = 'STP LMT'
-            order.lmtPrice = this.limitPrice
-            order.auxPrice = this.stopPrice
             order.action = this.action
             order.totalQuantity = this.volume
-            console.log({'action': 'place_order', 'contract': contract, 'order': order})
-            this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
+            console.log({'action': 'place_dynamic_order', 'contract': contract, 'order': order, 'options': {}})
+            this.$ibws.send({'action': 'place_dynamic_order', 'contract': contract, 'order': order, 'options': options})
 
 
         },
@@ -106,6 +111,28 @@ export default {
             this.offset = 0
             this.action = ""
         },
+        getTriggerOptions() {
+            const ma_trigger_patt = /^(ma)(\d+)$/i
+            let trigger = this.trigger
+            let ret = ma_trigger_patt.exec(trigger)
+            let options = {}
+            if (ret) {
+                console.log(ret)
+                const trigger_type = ret[1].toUpperCase()
+                switch (trigger_type) {
+                    case 'MA': {
+                        let period = Number(ret[2])
+                        if (0 < period <= 120) {
+                            options['type'] = trigger_type
+                            options['period'] = period
+                            options['offset'] = this.offset
+                        }
+                        break
+                    }
+                }
+            }
+            return options
+        }
 		}
 }
 </script>
