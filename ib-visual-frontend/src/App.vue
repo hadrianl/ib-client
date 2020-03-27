@@ -27,7 +27,7 @@
             <Content :style="{margin: '88px 20px 0', background: '#fff', minHeight: '500px'}">
                 <MainChart />
             </Content>
-            <Footer class="layout-footer-center">2011-2016 &copy; TalkingData</Footer>
+            <Footer class="layout-footer-center">2020 &copy; KRData</Footer>
         </Layout>
 
   </div>
