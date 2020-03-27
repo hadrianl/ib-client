@@ -3,7 +3,7 @@
 		<div slot="left">
 			<slot name="left"></slot>
 		</div>
-		<div slot="trigger">
+		<!-- <div slot="trigger">
 			<div>
 				<span class="dot"></span>
 				<span class="dot"></span>
@@ -11,7 +11,7 @@
 				<span class="dot"></span>
 				<span class="dot"></span>
 			</div>
-		</div>
+		</div> -->
 		<div slot="right">
 			<slot name="right"></slot>
 		</div>
@@ -21,7 +21,7 @@
 	export default {
 		data() {
 			return {
-				this_split: 0.5
+				this_split: 10
 			}
 		},
 		created() {

@@ -1,9 +1,9 @@
 <template>
     <div id="main-chart">
 		<!-- <Alert v-if="!isReady" type="error">未连接，请重新刷新页面或检查后端时候已连接</Alert> -->
-        <SplitLeftRight :split="0.7">
+        <SplitLeftRight :split="0.8">
             <template slot="left">
-                <TradeTable height='500'/>
+                <TradeTable :height="450" />
             </template>
             <template slot="right">
                 <PlaceOrderTab name="name1"/>

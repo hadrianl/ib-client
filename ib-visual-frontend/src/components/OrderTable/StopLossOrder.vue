@@ -15,13 +15,13 @@
             <InputNumber v-model="offset"   :max="200" :min="minPrice" :step="priceTick" ></InputNumber>
         </FormItem>
         <FormItem label="Action">
-            <RadioGroup v-model="action" type="button" >
+            <RadioGroup v-model="action" type="button" size="large">
                 <Radio label="BUY" style="color:red"></Radio>
                 <Radio label="SELL" style="color:green"></Radio>
             </RadioGroup>
         </FormItem>
         <FormItem>
-            <Button @click="insertOrder()" size="large" style="background:blue">{{action?action:"Not Set"}}</Button>
+            <Button @click="insertOrder()" size="large" :style="actionStyle">{{action?action:"NotSet"}}</Button>
             <Button @click="reset()" style="margin-left: 8px" size="large">RESET</Button>
         </FormItem>
 	</Form>
@@ -64,6 +64,22 @@ export default {
                     default:
                         return 0
                 }
+        },
+        actionStyle() {
+            switch (this.action) {
+            case "BUY":
+                return {
+                    background: 'red'
+                }
+            case "SELL":
+                return {
+                    background: 'green'
+                }
+            default:
+                return {
+                    background: 'white'
+                }
+        }
         }
     },
     methods: {

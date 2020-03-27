@@ -4,21 +4,23 @@
         <FormItem label="Size">
             <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
         </FormItem>
-        <FormItem label="Trigger" inline>
-            <Input v-model="trigger" placeholder="触发类型..." />
+        <FormItem label="Trigger" >
+            <Input v-model="trigger" placeholder="触发类型..." :maxlength=50 />
+        </FormItem>
+        <FormItem label="Offset" inline>
             <Icon v-if="action == 'BUY'" type="ios-arrow-round-up" color="red" />
             <Icon v-else-if="action == 'SELL'" type="ios-arrow-round-down" color="green" />
             <Icon v-else type="ios-help" />
             <InputNumber v-model="offset" :max="maxOffset" :min="minOffset" :step="priceTick" ></InputNumber>
         </FormItem>
         <FormItem label="Action">
-            <RadioGroup v-model="action" type="button" >
+            <RadioGroup v-model="action" type="button" size="large">
                 <Radio label="BUY" style="color:red"></Radio>
                 <Radio label="SELL" style="color:green"></Radio>
             </RadioGroup>
         </FormItem>
         <FormItem>
-            <Button @click="insertOrder()" size="large" style="background:blue">{{action?action:"Not Set"}}</Button>
+            <Button @click="insertOrder()" size="large" :style="actionStyle">{{action?action:"NotSet"}}</Button>
             <Button @click="reset()" style="margin-left: 8px" size="large">RESET</Button>
         </FormItem>
 	</Form>
@@ -51,15 +53,21 @@ export default {
 
     },
     computed: {
-        limitPrice: function() {
+        actionStyle() {
             switch (this.action) {
-                    case "BUY":
-                        return this.stopPrice + this.offset
-                    case "SELL":
-                        return this.stopPrice - this.offset
-                    default:
-                        return 0
+            case "BUY":
+                return {
+                    background: 'red'
                 }
+            case "SELL":
+                return {
+                    background: 'green'
+                }
+            default:
+                return {
+                    background: 'white'
+                }
+        }
         }
     },
     methods: {
