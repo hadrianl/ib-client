@@ -1,4 +1,4 @@
-FROM python:3.7.7-slim-stretch
+FROM python:3.7.7-alpine
 
 ENV IBHOST host.docker.internal
 ENV IBPORT 7496
@@ -7,10 +7,15 @@ EXPOSE 6789:6789
 
 WORKDIR /usr/src/app
 
-COPY requirements.txt ./
-
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.douban.com/simple
-
 COPY . .
+
+RUN apk add --no-cache wget build-base && \
+    wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
+    tar -zxvf ta-lib-0.4.0-src.tar.gz && cd ta-lib/ && ./configure --prefix=/usr && \ 
+    make && make install && \
+    cd .. && rm -rf ta-lib-0.4.0-src.tar.gz ta-lib/ && \
+    pip install --no-cache-dir -r requirements.txt -i https://pypi.douban.com/simple && \
+    apk del wget build-base
+
 
 CMD python ./main.py ${IBHOST} ${IBPORT}

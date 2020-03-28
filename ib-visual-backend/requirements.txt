@@ -1,2 +1,3 @@
 ib_insync
 websockets
+TA-Lib
