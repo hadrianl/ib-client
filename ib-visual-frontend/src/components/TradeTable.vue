@@ -1,5 +1,5 @@
 <template>
-    <Table :height="height" :columns="columns" :data="tradesArr" :row-class-name="rowClassName" border stripe >
+    <Table :height="height" :columns="columns" :data="tradesArr" :row-class-name="rowClassName" border>
         <template slot-scope="{ row }" slot="handle">
             <Button v-if="done_status.indexOf(row.orderStatus.status) == -1" 
             type="error" 
@@ -200,14 +200,20 @@ export default {
 <style>
     .ivu-table .table-filled-row td{
         background-color: #ff6600;
-        color: #fff;
+        color: #000;
     }
     .ivu-table .table-submitted-row td{
         background-color: #2db7f5;
-        color: #fff;
+        color: #000;
     }
     .ivu-table .table-presubmitted-row td{
         background-color: #187;
-        color: #fff;
+        color: #000;
     }
+
+    /* .ivu-table .table-presubmitted-row td{
+        background-color: #187;
+        color: #000;
+    } */
+
 </style>

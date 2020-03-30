@@ -32,7 +32,6 @@ class IBWS:
         self.USER: Set[websockets.WebSocketServerProtocol]= set()
         self.ib = IB()
         self.bars2Semaphore: Dict[BarDataList, int] = {}
-        self.queue = asyncio.Queue()
         self.loop = asyncio.get_event_loop()
 
     async def register(self, user):
@@ -77,8 +76,7 @@ class IBWS:
                 await ws.send(json.dumps({'contract': convert(c)}))
         except asyncio.TimeoutError:
             await ws.send(json.dumps({'error': '查询合约超时'}))
-
-        
+   
     async def place_order(self, contract, order, ws):
         trade = self.ib.placeOrder(contract, order)
 
@@ -95,7 +93,7 @@ class IBWS:
         action = order.action
         contract.includeExpired = False if contract.includeExpired == 'False' else True
 
-        logger.info('Place_dynamic_order:', contract.conId, options)
+        logger.info(f'Place_dynamic_order: {contract.conId}  {options}')
         if trigger_type == 'MA':
             try:
                 for bs in self.bars2Semaphore:
@@ -121,34 +119,29 @@ class IBWS:
 
             order.orderRef = f'{trigger_type}{period}'
             trade = self.ib.placeOrder(contract, order)
+
             # dynamic_loop
-            try:
-                self.bars2Semaphore[bars] += 1
-                async for bs, hasNewbar in bars.updateEvent:
-   
-                    if hasNewbar:
-                        if trade.orderStatus.status in ['PendingSubmit', 'ApiPending', 'PreSubmitted']:
-                            ma = talib.MA(np.array([b.close for b in bs[-period-1:]]), period)
-                            contract = trade.contract
-                            order = trade.order
-                            stopPrice = int(ma[-1])
-                            if action == 'BUY':
-                                order.auxPrice = stopPrice
-                                order.lmtPrice = stopPrice + offset
-                                self.ib.placeOrder(contract, order)
-                            elif action == 'SELL':
-                                order.auxPrice = stopPrice
-                                order.lmtPrice = stopPrice - offset
-                                self.ib.placeOrder(contract, order)
-                        else:
-                            break
-            except Exception as e:
-                logger.error('dynamic_order error:', e)
-            finally:
-                self.bars2Semaphore[bars] -= 1
-                if self.bars2Semaphore[bars] == 0:
-                    self.bars2Semaphore.pop(bars)
-                    self.ib.cancelHistoricalData(bars)
+            self.bars2Semaphore[bars] += 1
+
+            def dynamic_order(bs, hasNewbar):
+                if hasNewbar:
+                    if trade.orderStatus.status in ['PendingSubmit', 'ApiPending', 'PreSubmitted']:
+                        ma = talib.MA(np.array([b.close for b in bs[-period-1:]]), period)
+                        contract = trade.contract
+                        order = trade.order
+                        stopPrice = int(ma[-1])
+                        if action == 'BUY':
+                            order.auxPrice = stopPrice
+                            order.lmtPrice = stopPrice + offset
+                            self.ib.placeOrder(contract, order)
+                        elif action == 'SELL':
+                            order.auxPrice = stopPrice
+                            order.lmtPrice = stopPrice - offset
+                            self.ib.placeOrder(contract, order)
+
+            bars.updateEvent.connect(dynamic_order)
+            trade.filledEvent += lambda t: bars.updateEvent.disconnect(dynamic_order)
+            trade.cancelledEvent += lambda t: bars.updateEvent.disconnect(dynamic_order)
 
 
     async def middleware(self, ws, path):
@@ -159,18 +152,9 @@ class IBWS:
                 logger.debug(f'Get msg: {message}')
                 handler = self.recvMsg2Handler(msg, ws)
                 if handler:
-                    await self.queue.put(handler)
-                    # await handler
+                    await handler
         finally:
             await self.unregiseter(ws)
-
-    async def run_handler(self):
-        while True:
-            try:
-                handler = await self.queue.get()
-                await handler
-            except Exception as e:
-                logger.error(e)
 
     def recvMsg2Handler(self, msg, ws):
         if isinstance(msg, Dict) and msg.get('action'):
@@ -211,4 +195,4 @@ class IBWS:
         start_server = websockets.serve(self.middleware, '0.0.0.0', 6789)
         self.ib.run(start_server)
         handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
-        self.ib.run(*handlers, self.run_handler())
+        self.ib.run(*handlers)
