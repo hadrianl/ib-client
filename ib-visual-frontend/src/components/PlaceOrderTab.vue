@@ -1,8 +1,8 @@
 <template>
     <div class="tabs-style" style="background: #e3e8ee;padding:16px;">
         <Tabs type="card" value="name1">
-                <TabPane label="止损单" name="name1"><StopLossOrder :contractsList=contractsList /></TabPane>
-                <TabPane label="均线止损单" name="name2"><MAStopLossOrder :contractsList=contractsList /></TabPane>
+                <TabPane label="止损单" name="name1"><StopLossOrder /></TabPane>
+                <TabPane label="均线止损单" name="name2"><MAStopLossOrder /></TabPane>
             </Tabs>
     </div>  
 </template>
@@ -12,7 +12,7 @@ import MAStopLossOrder from './OrderTable/MAStopLossOrder.vue'
 export default {
     data() {
         return {
-            contractsList: [],
+            // contractsList: [],
         }
     },
     components:{
@@ -20,18 +20,7 @@ export default {
         MAStopLossOrder,
     },
     mounted() {
-        var _this = this
-        this.$ibws.on('contract', function(c) {
-            var flag = true
-            _this.contractsList.forEach(element => {
-                if (element.conId === c.conId){
-                    flag = false
-                }
-            })
-            if (flag){
-                _this.contractsList.push(c)
-            }
-        })
+
     }
 }
 </script>

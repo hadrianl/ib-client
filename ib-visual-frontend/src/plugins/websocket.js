@@ -62,6 +62,10 @@ class IBWebsocket extends EventEmitter {
             _this.emit('contract', data['contract'])
           }else if ('error' in data) {
             _this.emit('error', data['error'])
+          }else if ('bars' in data){
+            _this.emit('bars', data['bars'])
+          }else if ('bar' in data){
+            _this.emit('bar', data['bar'])
           }
 
           // const data = eval('(' + message.data + ')')

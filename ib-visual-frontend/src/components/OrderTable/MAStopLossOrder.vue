@@ -1,6 +1,6 @@
 <template>
     <Form :label-width="60" label-position="left">
-        <ContractItem ref="contract" :contractsList=contractsList />
+        <!-- <ContractItem ref="contract" :contractsList=contractsList /> -->
         <FormItem label="Size">
             <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
         </FormItem>
@@ -27,12 +27,12 @@
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
-import ContractItem from '../ContractItem.vue'
+// import ContractItem from '../ContractItem.vue'
 
 
 export default {
     components:{
-        ContractItem
+        // ContractItem
     },
     data() {
 			return {
@@ -46,9 +46,6 @@ export default {
                 minOffset: 0,
 			};
         },
-    props:{
-        contractsList: Array,
-    },
     mounted() {
 
     },
@@ -68,11 +65,16 @@ export default {
                     background: 'white'
                 }
         }
+        },
+        contract() {
+            return this.$store.state.currentContract
         }
     },
     methods: {
         insertOrder() {
-            const contract = this.$refs.contract.currentContract
+            // const contract = this.$refs.contract.currentContract
+            const contract = this.contract
+            console.log(contract)
             if (contract == null) {
                 this.$Notice.error({
                     title: 'Order Failed!',
@@ -113,7 +115,7 @@ export default {
 
         },
         reset() {
-            this.$refs.contract.currentContract = null
+            // this.$refs.contract.currentContract = null
             this.volume = 1
             this.stopPrice = 0
             this.offset = 0

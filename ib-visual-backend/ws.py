@@ -16,12 +16,15 @@ import numpy as np
 import logging
 
 util.logToConsole()
+util.patchAsyncio()
 logger = logging.getLogger('ib-visual-backend')
 def convert(obj):
     if is_dataclass(obj):
         return {field.name: convert(getattr(obj, field.name)) for field in fields(obj)}
     elif isinstance(obj, List):
         return [convert(o) for o in obj]
+    elif isinstance(obj, (int, float)):
+        return obj
     else:
         return str(obj)
 
@@ -32,6 +35,7 @@ class IBWS:
         self.USER: Set[websockets.WebSocketServerProtocol]= set()
         self.ib = IB()
         self.bars2Semaphore: Dict[BarDataList, int] = {}
+        self.barData = None
         self.loop = asyncio.get_event_loop()
 
     async def register(self, user):
@@ -85,6 +89,37 @@ class IBWS:
         order.permId = int(order.permId)
         order.clientId = int(order.clientId)
         self.ib.cancelOrder(order)
+
+    async def sub_klines(self, contract, ws):
+        if self.barData and self.barData.contract != contract:
+            self.ib.cancelHistoricalData(self.barData)
+            self.barData = None
+
+
+        if not self.barData:
+            try:
+                self.barData = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', '1 min', 'TRADES', useRTH=False, keepUpToDate=True), 10)
+            except asyncio.TimeoutError:
+                self.barData = None
+                await ws.send(json.dumps({'error': '订阅K线超时：请确认数据连接是否中断'}))
+                return
+
+        await ws.send(json.dumps({
+                'bars': {
+                    'data':[{'date': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume} for d in self.barData], 
+                    'contract': convert(self.barData.contract)}
+                    }))
+
+        def send_bar(bars, hasNewBar):
+            d = bars[-1]
+            for u in self.USER:
+                self.ib.run(u.send(json.dumps(
+                    {'bar': {
+                        'data': {'date': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume},
+                        'contract': convert(bars.contract)}})))
+
+        self.barData.updateEvent += send_bar
+
 
     async def place_dynamic_order(self, contract, order: Order, options, ws):
         trigger_type = options['type']
@@ -190,6 +225,13 @@ class IBWS:
                     order.pop('softDollarTier')
                     order = Order(**order)
                     return self.place_dynamic_order(contract, order, options, ws)
+            elif msg['action'] == 'sub_klines':
+                contract = msg.get('contract')
+                if contract:
+                    contract.pop('deltaNeutralContract')
+                    contract = Contract(**contract)
+                    return self.sub_klines(contract, ws)
+     
 
     def run(self):
         start_server = websockets.serve(self.middleware, '0.0.0.0', 6789)

@@ -1,20 +1,18 @@
 <template>
     <div>
-        <FormItem label="Contract" inline>
-        <AutoComplete clearable	
-        icon="ios-search"
-        v-model="condName" 
-        :data="contractsList" 
-        @on-search="querySearch" 
-        @on-select="selectContract"
-        @on-clear="clearContract"
-        placeholder="请输入合约" >
-        <Option v-for="(c, index) in contractsList" :value="c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4)" :key="index">
-            <span>{{c.symbol}}{{c.lastTradeDateOrContractMonth.substr(2, 4)}} conId:{{c.conId}} </span>
-        </Option>
-        </AutoComplete>
-    </FormItem>
-    <Alert v-if="currentContract" type="success" show-icon>ConId：{{currentContract.conId}}</Alert>
+    <AutoComplete clearable	
+    icon="ios-search"
+    v-model="condName" 
+    :data="contractsList" 
+    @on-search="querySearch" 
+    @on-select="selectContract"
+    @on-clear="clearContract"
+    placeholder="请输入合约" >
+    <Option v-for="(c, index) in contractsList" :value="c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4)" :key="index">
+        <span>{{c.symbol}}{{c.lastTradeDateOrContractMonth.substr(2, 4)}} conId:{{c.conId}} </span>
+    </Option>
+    </AutoComplete>
+    <Alert v-if="contract" type="success" show-icon>ConId：{{contract.conId}}</Alert>
     </div>
 </template>
 <script>
@@ -24,25 +22,31 @@ export default {
     data() {
         return {
             condName: "",
-            currentContract: null,
+            // contractsList: [],
         }
     },
-    props:{
-        contractsList: Array
+    computed: {
+        contract() {
+            return this.$store.state.currentContract
+        },
+        contractsList() {
+            return this.$store.state.contractsList
+        }
     },
     mounted() {
         // var _this = this
-        // this.$ibws.on('contract', function(c) {
-        //     var flag = true
-        //     _this.contractsList.forEach(element => {
-        //         if (element.conId === c.conId){
-        //             flag = false
-        //         }
-        //     })
-        //     if (flag){
-        //         _this.contractsList.push(c)
-        //     }
-        // })
+        this.$ibws.on('contract', function(c) {
+            // var flag = true
+            // _this.contractsList.forEach(element => {
+            //     if (element.conId === c.conId){
+            //         flag = false
+            //     }
+            // })
+            // if (flag){
+            //     _this.contractsList.push(c)
+            // }
+            this.$store.commit('addContract', c)
+        })
     },
     methods: {
         selectContract(item) {
@@ -52,7 +56,9 @@ export default {
                     contract = c
                 }
             })
-            this.currentContract = contract
+            this.$store.commit('selectContract', contract)
+
+            // this.$ibws.send({'action': 'sub_klines','contract': contract})
         },
         querySearch(queryString) {
             var ret = patt.exec(queryString)
@@ -75,7 +81,7 @@ export default {
             }
         },
         clearContract() {
-            this.currentContract = null
+            this.$store.commit('clearContract')
         },
     }
 }

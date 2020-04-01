@@ -1,75 +1,55 @@
 <template>
-    <div id="main-chart">
+    <div id="main-chart" class="split">
 		<!-- <Alert v-if="!isReady" type="error">未连接，请重新刷新页面或检查后端时候已连接</Alert> -->
-        <SplitLeftRight :split="0.8">
-            <template slot="left">
-                <TradeTable :height="450" />
-            </template>
-            <template slot="right">
+		<Split v-model="lr">
+            <div slot="left" class="split-pane no-padding">
+                <TradeTable />
+            </div>
+            <div slot="right" class="split-pane">
+				<ContractItem></ContractItem>
                 <PlaceOrderTab name="name1"/>
-            </template>
-        </SplitLeftRight>
+            </div>
+        </Split>
     </div>
 </template>
 
 <script>
 import TradeTable from '../components/TradeTable.vue'
-import SplitLeftRight from '../components/SplitLeftRight.vue'
 import PlaceOrderTab from '../components/PlaceOrderTab.vue'
+// import BarChart from '../components/BarChart.vue'
+import ContractItem from '../components/ContractItem.vue'
 
 export default {
 	components: {
-		SplitLeftRight,
+		ContractItem,
+		// SplitLayout,
 		TradeTable,
-		PlaceOrderTab
+		PlaceOrderTab,
+		// BarChart,
 		},
 	computed: {
-		// isReady() {
-		// 		return this.$ibws.isReady()
-		// 	}
+		// contract: function() {
+		// 	return this.$refs.contract.currentContract
+		// }
+	},
+	data(){
+		return {
+			lr: 0.8,
+			tb: 0.2
+		}
 		},
 	beforeCreate: () => {
 		// 在实例初始化之后，数据观测 (data observer) 和 event/watcher 事件配置之前被调用。
 	},
 	created: () => {
 		// 在实例创建完成后被立即调用。在这一步，实例已完成以下的配置：数据观测 (data observer)，属性和方法的运算，watch/event 事件回调。然而，挂载阶段还没开始，$el 属性目前不可见。
+		
 	},
 	beforeMount: () => {
 		// 在挂载开始之前被调用：相关的 render 函数首次被调用。
 	},
 	mounted: function () {
-		var _this = this
-		this.$ibws.on('error', function(e) {
-			_this.$Notice.error({
-				title: 'Error',
-				desc: e,
-			})
-		})
 
-		this.$ibws.on('open', function(d) {
-			_this.$Notice.success({
-				title: 'Connection',
-				desc: '连接' + this.url + ',' + d.msg,
-			})
-		})
-
-		this.$ibws.on('close', function() {
-			_this.$Notice.warning({
-				title: 'Connection',
-				desc: '连接断开',
-			})
-		})
-
-		this.$ibws.on('death', function(d) {
-			_this.$Notice.error({
-				title: 'Connection Failed!',
-				desc: d.msg,
-				duration: 0
-			})
-		})
-		
-		this.$ibws.init(false)
-		this.$ibws.send({'action': "get_all_trades"})
 	},
 	beforeUpdate: () => {
 		// 数据更新时调用，发生在虚拟 DOM 打补丁之前。这里适合在更新之前访问现有的 DOM，比如手动移除已添加的事件监听器。
@@ -95,12 +75,24 @@ export default {
 </script>
 
 <style>
-#main-chart {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+	#main-chart {
+	/* font-family: Avenir, Helvetica, Arial, sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-align: center;
+	color: #2c3e50;
+	margin-top: 60px; */
+	}
+
+    .split{
+        /* height: 200px; */
+        border: 1px solid #dcdee2;
+    }
+    .split-pane{
+        padding: 10px;
+    }
+    .split-pane.no-padding{
+        height: 300px;
+        padding: 0;
+    }
 </style>

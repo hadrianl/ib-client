@@ -1,5 +1,5 @@
 <template>
-    <Table :height="height" :columns="columns" :data="tradesArr" :row-class-name="rowClassName" border>
+    <Table :height="450" :columns="columns" :data="tradesArr" :row-class-name="rowClassName" border>
         <template slot-scope="{ row }" slot="handle">
             <Button v-if="done_status.indexOf(row.orderStatus.status) == -1" 
             type="error" 
