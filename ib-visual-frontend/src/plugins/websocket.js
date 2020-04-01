@@ -34,94 +34,98 @@ class IBWebsocket extends EventEmitter {
         }
       }
 
-      isReady () {
-        return this.ws.readyState === this.WebSocket.OPEN
+    setUrl (hostname) {
+      this.url = `ws://${hostname}:6789`
+    }
+
+    isReady () {
+      return this.ws.readyState === this.WebSocket.OPEN
+    }
+
+    init (isReconnection = true) {
+      this.ws = new this.WebSocket(this.url)
+  
+      if (isReconnection) {
+        this.reconnectTimes += 1
+      }
+  
+      const _this = this
+  
+      this.ws.onmessage = function (message) {
+        // eslint-disable-next-line no-eval
+        // console.log('message', message)
+        const data = JSON.parse(message.data)
+        if ('trade' in data) {
+          _this.emit('trade', data['trade'])
+        }else if ('trades' in data) {
+          // for (let i in data['trades']){
+          //   _this.emit('trade', data['trades'][i])
+          // }
+          _this.emit('trades', data['trades'])
+        }else if ('contract' in data){
+          _this.emit('contract', data['contract'])
+        }else if ('error' in data) {
+          _this.emit('error', data['error'])
+        }else if ('bars' in data){
+          _this.emit('bars', data['bars'])
+        }else if ('bar' in data){
+          _this.emit('bar', data['bar'])
+        }
+
+        // const data = eval('(' + message.data + ')')
+        // _this.emit('message', data)
+      //   setImmediate(function () {
+      //     _this.ws.send('{"aid":"peek_message"}')
+      //   })
       }
 
-      init (isReconnection = true) {
-        this.ws = new this.WebSocket(this.url)
-    
-        if (isReconnection) {
-          this.reconnectTimes += 1
-        }
-    
-        const _this = this
-    
-        this.ws.onmessage = function (message) {
-          // eslint-disable-next-line no-eval
-          // console.log('message', message)
-          const data = JSON.parse(message.data)
-          if ('trade' in data) {
-            _this.emit('trade', data['trade'])
-          }else if ('trades' in data) {
-            // for (let i in data['trades']){
-            //   _this.emit('trade', data['trades'][i])
-            // }
-            _this.emit('trades', data['trades'])
-          }else if ('contract' in data){
-            _this.emit('contract', data['contract'])
-          }else if ('error' in data) {
-            _this.emit('error', data['error'])
-          }else if ('bars' in data){
-            _this.emit('bars', data['bars'])
-          }else if ('bar' in data){
-            _this.emit('bar', data['bar'])
-          }
-
-          // const data = eval('(' + message.data + ')')
-          // _this.emit('message', data)
-        //   setImmediate(function () {
-        //     _this.ws.send('{"aid":"peek_message"}')
-        //   })
-        }
-
-        this.ws.onclose = function (event) {
-            console.log('close', event)
-            _this.emit('close')
-            // 清空 queue
-            _this.queue = []
-            // 自动重连
-            if (_this.reconnect) {
-              if (_this.reconnectMaxTimes <= _this.reconnectTimes) {
-                clearTimeout(_this.reconnectTask)
-                _this.emit('death', {
-                  msg: '超过重连次数' + _this.reconnectMaxTimes
-                })
-              } else {
-                _this.reconnectTask = setTimeout(function () {
-                  if (_this.ws.readyState === 3) {
-                    // 每次重连的时候设置 _this.reconnectUrlIndex
-                    // _this.reconnectUrlIndex = (_this.reconnectUrlIndex + 1) < _this.urlList.length ? _this.reconnectUrlIndex + 1 : 0
-                    _this.init(true)
-                    _this.emit('reconnect', {
-                      msg: '发起重连第 ' + _this.reconnectTimes + ' 次'
-                    })
-                  }
-                }, _this.reconnectInterval)
-              }
-            }
-          }
-
-        this.ws.onerror = error => {
-          console.log('error', error)
-            _this.emit('error', error)
-            _this.ws.close()
-          }
-
-        this.ws.onopen = function () {
-          console.log('open')
-            _this.emit('open', {
-              msg: '发起重连第 ' + _this.reconnectTimes + ' 次, 成功'
-            })
-            if (this.reconnectTask) {
+      this.ws.onclose = function (event) {
+          console.log('close', event)
+          _this.emit('close')
+          // 清空 queue
+          _this.queue = []
+          // 自动重连
+          if (_this.reconnect) {
+            if (_this.reconnectMaxTimes <= _this.reconnectTimes) {
               clearTimeout(_this.reconnectTask)
-            }
-            while (_this.queue.length > 0) {
-              if (_this.ws.readyState === 1) _this.ws.send(_this.queue.shift())
-              else break
+              _this.emit('death', {
+                msg: '超过重连次数' + _this.reconnectMaxTimes
+              })
+            } else {
+              _this.reconnectTask = setTimeout(function () {
+                if (_this.ws.readyState === 3) {
+                  // 每次重连的时候设置 _this.reconnectUrlIndex
+                  // _this.reconnectUrlIndex = (_this.reconnectUrlIndex + 1) < _this.urlList.length ? _this.reconnectUrlIndex + 1 : 0
+                  _this.init(true)
+                  _this.emit('reconnect', {
+                    msg: '发起重连第 ' + _this.reconnectTimes + ' 次'
+                  })
+                }
+              }, _this.reconnectInterval)
             }
           }
         }
+
+      this.ws.onerror = error => {
+        console.log('error', error)
+          _this.emit('error', error)
+          _this.ws.close()
+        }
+
+      this.ws.onopen = function () {
+        console.log('open')
+          _this.emit('open', {
+            msg: '发起重连第 ' + _this.reconnectTimes + ' 次, 成功'
+          })
+          if (this.reconnectTask) {
+            clearTimeout(_this.reconnectTask)
+          }
+          while (_this.queue.length > 0) {
+            if (_this.ws.readyState === 1) _this.ws.send(_this.queue.shift())
+            else break
+          }
+        }
+      }
 
     close () {
             this.ws.onclose = () => {}

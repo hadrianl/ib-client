@@ -13,11 +13,12 @@
                             <Icon type="ios-keypad"></Icon>
                             行情(暂时不可用)
                         </MenuItem>
-                        <!-- <MenuItem name="3">
+                        <div>
                             <Icon type="ios-analytics"></Icon>
-                            Item 3
-                        </MenuItem>
-                        <MenuItem name="4">
+                            <Input v-model="hostname" placeholder="Enter hostname...default: localhost" size="small" style="width: 200px" :disabled="noedit"/>
+							<Button type="success" ghost @click=updateBackendWS>连接</Button>
+                        </div>
+                        <!-- <MenuItem name="4">
                             <Icon type="ios-paper"></Icon>
                             Item 4
                         </MenuItem> -->
@@ -54,7 +55,9 @@ export default {
 	},
 	data() {
 		return {
-			activeItem: "order"
+			activeItem: "order",
+			hostname: "localhost",
+			noedit: false,
 		}
 	},
 	computed: {
@@ -63,6 +66,13 @@ export default {
 	methods: {
 		selectItem(name) {
 			this.activeItem=name
+		},
+		updateBackendWS(){
+			this.$ibws.setUrl(this.hostname)
+			this.$ibws.init(false)
+			this.$ibws.send({'action': "get_all_trades"})
+			this.noedit = true
+
 		}
 	},
 	beforeCreate: () => {
@@ -75,8 +85,7 @@ export default {
 		// 在挂载开始之前被调用：相关的 render 函数首次被调用。
 	},
 	mounted: function () {
-		this.$ibws.init(false)
-		this.$ibws.send({'action': "get_all_trades"})
+		
 	},
 	beforeUpdate: () => {
 		// 数据更新时调用，发生在虚拟 DOM 打补丁之前。这里适合在更新之前访问现有的 DOM，比如手动移除已添加的事件监听器。
