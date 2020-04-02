@@ -33,9 +33,9 @@ class IBWS:
         self.host = host
         self.port = port
         self.USER: Set[websockets.WebSocketServerProtocol]= set()
+        self.SUB_USER = set()
         self.ib = IB()
-        self.bars2Semaphore: Dict[BarDataList, int] = {}
-        self.barData = None
+        self.bar2ws: Dict[BarDataList, Set] = {}
         self.loop = asyncio.get_event_loop()
 
     async def register(self, user):
@@ -47,6 +47,12 @@ class IBWS:
     async def unregiseter(self, user):
         self.USER.remove(user)
         logger.info(f'Unregister User: {user}')
+        if user in self.SUB_USER:
+            self.SUB_USER.remove(user)
+
+        if not (self.SUB_USER and self.USER):
+            for _, bars in self.ib.wrapper.reqId2Subscriber.items():
+                bars.updateEvent -= self.send_bar
         # if not self.USER:
         #     self.ib.disconnect()
 
@@ -59,17 +65,17 @@ class IBWS:
         async for t in event:
             t.log = []
             t = convert(t)
-            msg = {'trade': t}
+            msg = {'t': 'trade', 'data': t}
             for u in self.USER:
                 await u.send(json.dumps(msg))
 
     async def send_trades(self, ws):
         trades = self.ib.trades()
-        msg = {'trades': []}
+        msg = {'t': 'trades', 'data': []}
         for t in trades:
             t.log = []
             t = convert(t)
-            msg['trades'].append(t)
+            msg['data'].append(t)
 
         await ws.send(json.dumps(msg))
 
@@ -77,9 +83,9 @@ class IBWS:
         try:
             contracts = await asyncio.wait_for(self.ib.qualifyContractsAsync(contract), 3)
             for c in contracts:
-                await ws.send(json.dumps({'contract': convert(c)}))
+                await ws.send(json.dumps({'t': 'contract', 'data': c.__dict__}))
         except asyncio.TimeoutError:
-            await ws.send(json.dumps({'error': '查询合约超时'}))
+            await ws.send(json.dumps({'t': 'error', 'data': '查询合约超时'}))
    
     async def place_order(self, contract, order, ws):
         trade = self.ib.placeOrder(contract, order)
@@ -91,34 +97,37 @@ class IBWS:
         self.ib.cancelOrder(order)
 
     async def sub_klines(self, contract, ws):
-        if self.barData and self.barData.contract != contract:
-            self.ib.cancelHistoricalData(self.barData)
-            self.barData = None
+        try:
+            for reqId, bs in self.ib.wrapper.reqId2Subscriber.items():
+                if isinstance(bs, BarDataList) and bs.contract == contract:
+                    bars = bs
+                    break
+            else:
+                bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', '1 min', 'TRADES', useRTH=False, keepUpToDate=True), 10)
+        except asyncio.TimeoutError:
+            await ws.send(json.dumps({'error': '订阅K线超时：请确认数据连接是否中断'}))
+            return
 
-
-        if not self.barData:
-            try:
-                self.barData = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', '1 min', 'TRADES', useRTH=False, keepUpToDate=True), 10)
-            except asyncio.TimeoutError:
-                self.barData = None
-                await ws.send(json.dumps({'error': '订阅K线超时：请确认数据连接是否中断'}))
-                return
-
+        conId = bars.contract.conId
+        self.SUB_USER.add(ws)
         await ws.send(json.dumps({
-                'bars': {
-                    'data':[{'date': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume} for d in self.barData], 
-                    'contract': convert(self.barData.contract)}
-                    }))
+            't': 'bars',
+            'data': [{'date': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[-120:]]}))
 
-        def send_bar(bars, hasNewBar):
-            d = bars[-1]
-            for u in self.USER:
-                self.ib.run(u.send(json.dumps(
-                    {'bar': {
-                        'data': {'date': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume},
-                        'contract': convert(bars.contract)}})))
+        if self.send_bar not in bars.updateEvent:
+            bars.updateEvent += self.send_bar
 
-        self.barData.updateEvent += send_bar
+    async def unsub_klines(self, ws):
+        if ws in self.SUB_USER:
+            self.SUB_USER.remove(ws)
+ 
+    def send_bar(self, bars, hasNewBar):
+        d = bars[-1]
+        
+        for u in self.SUB_USER:
+            self.ib.run(u.send(json.dumps({
+                't': 'bar',
+                'data': {'date': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
 
 
     async def place_dynamic_order(self, contract, order: Order, options, ws):
@@ -126,20 +135,19 @@ class IBWS:
         offset = options['offset']
         period = options['period']
         action = order.action
-        contract.includeExpired = False if contract.includeExpired == 'False' else True
+        # contract.includeExpired = False if contract.includeExpired == 'False' else True
 
         logger.info(f'Place_dynamic_order: {contract.conId}  {options}')
         if trigger_type == 'MA':
             try:
-                for bs in self.bars2Semaphore:
-                    if bs.contract.conId == int(contract.conId):
+                for reqId, bs in self.ib.wrapper.reqId2Subscriber.items():
+                    if isinstance(bs, BarDataList) and bs.contract == contract:
                         bars = bs
                         break
                 else:
                     bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', '1 min', 'TRADES', useRTH=False, keepUpToDate=True), 10)
-                    self.bars2Semaphore[bars] = 0
             except asyncio.TimeoutError:
-                await ws.send(json.dumps({'error': '无法下均线止损单：无法获取合约数据'}))
+                await ws.send(json.dumps({'t': 'error', 'data': '无法下均线止损单：无法获取合约数据'}))
                 return
             
             # init ma order
@@ -156,7 +164,6 @@ class IBWS:
             trade = self.ib.placeOrder(contract, order)
 
             # dynamic_loop
-            self.bars2Semaphore[bars] += 1
 
             def dynamic_order(bs, hasNewbar):
                 if hasNewbar:
@@ -204,15 +211,14 @@ class IBWS:
                 contract = msg.get('contract')
                 order = msg.get('order')
                 if contract and order:
-                    contract.pop('deltaNeutralContract')
                     contract = Contract(**contract)
-                    order.pop('softDollarTier')
+                    order['softDollarTier'] = SoftDollarTier(**order['softDollarTier'])
                     order = Order(**order)
                     return self.place_order(contract, order, ws)
             elif msg['action'] == 'cancel_order':
                 order = msg.get('order')
                 if order:
-                    order.pop('softDollarTier')
+                    order['softDollarTier'] = SoftDollarTier(**order['softDollarTier'])
                     order = Order(**order)
                     return self.cancel_order(order, ws)
             elif msg['action'] == 'place_dynamic_order':
@@ -220,21 +226,36 @@ class IBWS:
                 order = msg.get('order')
                 options = msg.get('options')
                 if contract and order and options:
-                    contract.pop('deltaNeutralContract')
                     contract = Contract(**contract)
-                    order.pop('softDollarTier')
+                    order['softDollarTier'] = SoftDollarTier(**order['softDollarTier'])
                     order = Order(**order)
                     return self.place_dynamic_order(contract, order, options, ws)
             elif msg['action'] == 'sub_klines':
                 contract = msg.get('contract')
                 if contract:
-                    contract.pop('deltaNeutralContract')
                     contract = Contract(**contract)
                     return self.sub_klines(contract, ws)
+            elif msg['action'] == 'unsub_klines':
+                return self.unsub_klines(ws)
+
+    async def global_check(self):
+        while True:
+            await asyncio.sleep(120)
+            print('USER:', self.USER)
+            print('SUB_USER:', self.SUB_USER)
+            print('bars', [{reqId: sub.updateEvent}for reqId, sub in self.ib.wrapper.reqId2Subscriber.items()])
+            if self.USER:  # check if has user
+                continue
+
+            for reqId, sub in self.ib.wrapper.reqId2Subscriber.items():  # check if has uncompleted event
+                if len(sub.updateEvent):
+                    break
+            else:
+                self.ib.disconnect()
      
 
     def run(self):
         start_server = websockets.serve(self.middleware, '0.0.0.0', 6789)
         self.ib.run(start_server)
         handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
-        self.ib.run(*handlers)
+        self.ib.run(*handlers, self.global_check())

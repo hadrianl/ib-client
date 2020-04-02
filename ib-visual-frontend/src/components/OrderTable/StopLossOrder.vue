@@ -107,7 +107,9 @@ export default {
             }
 
             var order = new Order()
+            order.outsideRth = true
             order.orderType = 'STP LMT'
+            // order.tif = 'GTC'
             order.lmtPrice = this.limitPrice
             order.auxPrice = this.stopPrice
             order.action = this.action

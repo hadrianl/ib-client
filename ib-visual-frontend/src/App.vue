@@ -70,7 +70,6 @@ export default {
 		updateBackendWS(){
 			this.$ibws.setUrl(this.hostname)
 			this.$ibws.init(false)
-			this.$ibws.send({'action': "get_all_trades"})
 			this.noedit = true
 
 		}

@@ -115,7 +115,7 @@ class Order {
         this.conditionsCancelOrder  = false
         this.conditionsIgnoreRth  = false
         this.extOperator = ''
-        this.softDollarTier = null   //SoftDollarTier = field(default_factory=SoftDollarTier)
+        this.softDollarTier = new SoftDollarTier()   //SoftDollarTier = field(default_factory=SoftDollarTier)
         this.cashQty = UNSET_DOUBLE
         this.mifid2DecisionMaker = ''
         this.mifid2DecisionAlgo = ''

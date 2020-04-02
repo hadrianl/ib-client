@@ -54,23 +54,23 @@ class IBWebsocket extends EventEmitter {
       this.ws.onmessage = function (message) {
         // eslint-disable-next-line no-eval
         // console.log('message', message)
-        const data = JSON.parse(message.data)
-        if ('trade' in data) {
-          _this.emit('trade', data['trade'])
-        }else if ('trades' in data) {
-          // for (let i in data['trades']){
-          //   _this.emit('trade', data['trades'][i])
-          // }
-          _this.emit('trades', data['trades'])
-        }else if ('contract' in data){
-          _this.emit('contract', data['contract'])
-        }else if ('error' in data) {
-          _this.emit('error', data['error'])
-        }else if ('bars' in data){
-          _this.emit('bars', data['bars'])
-        }else if ('bar' in data){
-          _this.emit('bar', data['bar'])
-        }
+        const msg = JSON.parse(message.data)
+        _this.emit(msg.t, msg.data)
+
+
+        // if ('trade' in data) {
+        //   _this.emit('trade', data['trade'])
+        // }else if ('trades' in data) {
+        //   _this.emit('trades', data['trades'])
+        // }else if ('contract' in data){
+        //   _this.emit('contract', data['contract'])
+        // }else if ('error' in data) {
+        //   _this.emit('error', data['error'])
+        // }else if ('bars' in data){
+        //   _this.emit('bars', data['bars'])
+        // }else if ('bar' in data){
+        //   _this.emit('bar', data['bar'])
+        // }
 
         // const data = eval('(' + message.data + ')')
         // _this.emit('message', data)

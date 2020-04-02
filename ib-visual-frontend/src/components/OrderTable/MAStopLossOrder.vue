@@ -107,6 +107,8 @@ export default {
             
             var order = new Order()
             order.orderType = 'STP LMT'
+            order.outsideRth = true
+            // order.tif = 'GTC'
             order.action = this.action
             order.totalQuantity = this.volume
             console.log({'action': 'place_dynamic_order', 'contract': contract, 'order': order, 'options': {}})

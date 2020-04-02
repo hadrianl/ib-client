@@ -2,7 +2,7 @@ FROM node:latest as builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm --registry https://registry.npm.taobao.org install
-COPY ./ .
+COPY . .
 RUN npm run build
 
 From nginx:alpine as production

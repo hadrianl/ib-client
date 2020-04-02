@@ -10,7 +10,7 @@
 </template>
 
 <script>
-// import Vue from 'vue'
+import Vue from 'vue'
 
 function orderKey(orderId, permId, clientId) {
     if (orderId <= 0) {
@@ -177,7 +177,14 @@ export default {
             _this.tradesArr.unshift(t)
             
         })
+
+        this.$ibws.send({'action': "get_all_trades"})
     },
+    beforeDestroy: () => {
+        // 实例销毁之前调用。在这一步，实例仍然完全可用。
+        Vue.$ibws.off('trades')
+        Vue.$ibws.off('trade')
+	},
     methods: {
         cancelOrder(order) {
             this.$ibws.send({'action':'cancel_order', 'order': order})

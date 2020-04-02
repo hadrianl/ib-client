@@ -34,7 +34,7 @@ export default {
         }
     },
     mounted() {
-        // var _this = this
+        var _this = this
         this.$ibws.on('contract', function(c) {
             // var flag = true
             // _this.contractsList.forEach(element => {
@@ -45,7 +45,7 @@ export default {
             // if (flag){
             //     _this.contractsList.push(c)
             // }
-            this.$store.commit('addContract', c)
+            _this.$store.commit('addContract', c)
         })
     },
     methods: {
