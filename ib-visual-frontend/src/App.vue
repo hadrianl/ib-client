@@ -83,8 +83,8 @@ export default {
 	beforeMount: () => {
 		// 在挂载开始之前被调用：相关的 render 函数首次被调用。
 	},
-	mounted: function () {
-		
+	mounted: () => {
+
 	},
 	beforeUpdate: () => {
 		// 数据更新时调用，发生在虚拟 DOM 打补丁之前。这里适合在更新之前访问现有的 DOM，比如手动移除已添加的事件监听器。

@@ -1,5 +1,5 @@
 <template>
-    <div class="tabs-style" style="background: #e3e8ee;padding:16px;">
+    <div class="tabs-style" style="background: #e3e8ee;padding:16px;height: 100%;width: 100%">
         <Tabs type="card" value="name1">
                 <TabPane label="止损单" name="name1"><StopLossOrder /></TabPane>
                 <TabPane label="均线止损单" name="name2"><MAStopLossOrder /></TabPane>

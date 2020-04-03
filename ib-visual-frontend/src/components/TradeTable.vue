@@ -1,5 +1,5 @@
 <template>
-    <Table :height="450" :columns="columns" :data="tradesArr" :row-class-name="rowClassName" border>
+    <Table :columns="columns" :data="tradesArr" :row-class-name="rowClassName">
         <template slot-scope="{ row }" slot="handle">
             <Button v-if="done_status.indexOf(row.orderStatus.status) == -1" 
             type="error" 
@@ -36,7 +36,6 @@ export default {
             tradesArr: [],
             columns : [
                 {title: 'permId',
-                // key: 'order.permId',
                 width: 100,
                 fixed: 'left',
                 sortable: true,
@@ -45,7 +44,6 @@ export default {
                  }
                 },
                 {title: 'c',
-                //  key: 'order.clientId',
                  width: 30,
                  align: 'left',
                  render: (h, params) => {
@@ -53,7 +51,6 @@ export default {
                  }
                 },
                 {title: 'orderId',
-                //  key:'order.orderId',
                  width: 100,
                  align: 'left',
                  render: (h, params) => {
@@ -61,7 +58,6 @@ export default {
                  }
                 },
                 {title: 'conId',
-                // key: 'contract.conId',
                 width: 100,
                 align: 'left',
                 render: (h, params) => {

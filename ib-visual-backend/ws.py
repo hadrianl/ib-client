@@ -44,6 +44,8 @@ class IBWS:
         if not self.ib.isConnected():
             await self.ib.connectAsync(self.host, self.port, 0)
 
+        await user.send(json.dumps({'t': 'connect_sync'}))
+
     async def unregiseter(self, user):
         self.USER.remove(user)
         logger.info(f'Unregister User: {user}')
@@ -69,6 +71,14 @@ class IBWS:
             for u in self.USER:
                 await u.send(json.dumps(msg))
 
+    async def handle_position_event(self):
+        async for p in self.ib.positionEvent:
+            pos = p._asdict()
+            pos['conId'] = pos.pop('contract').conId
+            msg = {'t': 'position', 'data': pos}
+            for u in self.USER:
+                await u.send(json.dumps(msg))
+
     async def send_trades(self, ws):
         trades = self.ib.trades()
         msg = {'t': 'trades', 'data': []}
@@ -76,6 +86,16 @@ class IBWS:
             t.log = []
             t = convert(t)
             msg['data'].append(t)
+
+        await ws.send(json.dumps(msg))
+
+    async def send_positions(self, ws):
+        positions = self.ib.positions()
+        msg = {'t': 'positions', 'data': []}
+        for p in positions:
+            pos = p._asdict()
+            pos['conId'] = pos.pop('contract').conId
+            msg['data'].append(pos)
 
         await ws.send(json.dumps(msg))
 
@@ -91,22 +111,23 @@ class IBWS:
         trade = self.ib.placeOrder(contract, order)
 
     async def cancel_order(self, order, ws):
-        order.orderId = int(order.orderId)
-        order.permId = int(order.permId)
-        order.clientId = int(order.clientId)
+        # order.orderId = int(order.orderId)
+        # order.permId = int(order.permId)
+        # order.clientId = int(order.clientId)
         self.ib.cancelOrder(order)
 
     async def sub_klines(self, contract, ws):
-        try:
-            for reqId, bs in self.ib.wrapper.reqId2Subscriber.items():
-                if isinstance(bs, BarDataList) and bs.contract == contract:
-                    bars = bs
-                    break
-            else:
+        
+        for reqId, bs in self.ib.wrapper.reqId2Subscriber.items():
+            if isinstance(bs, BarDataList) and bs.contract == contract:
+                bars = bs
+                break
+        else:
+            try:
                 bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', '1 min', 'TRADES', useRTH=False, keepUpToDate=True), 10)
-        except asyncio.TimeoutError:
-            await ws.send(json.dumps({'error': '订阅K线超时：请确认数据连接是否中断'}))
-            return
+            except asyncio.TimeoutError:
+                await ws.send(json.dumps({'error': '订阅K线超时：请确认数据连接是否中断'}))
+                return
 
         conId = bars.contract.conId
         self.SUB_USER.add(ws)
@@ -129,7 +150,6 @@ class IBWS:
                 't': 'bar',
                 'data': {'date': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
 
-
     async def place_dynamic_order(self, contract, order: Order, options, ws):
         trigger_type = options['type']
         offset = options['offset']
@@ -139,16 +159,17 @@ class IBWS:
 
         logger.info(f'Place_dynamic_order: {contract.conId}  {options}')
         if trigger_type == 'MA':
-            try:
-                for reqId, bs in self.ib.wrapper.reqId2Subscriber.items():
-                    if isinstance(bs, BarDataList) and bs.contract == contract:
-                        bars = bs
-                        break
-                else:
+            
+            for reqId, bs in self.ib.wrapper.reqId2Subscriber.items():
+                if isinstance(bs, BarDataList) and bs.contract == contract:
+                    bars = bs
+                    break
+            else:
+                try:       
                     bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', '1 min', 'TRADES', useRTH=False, keepUpToDate=True), 10)
-            except asyncio.TimeoutError:
-                await ws.send(json.dumps({'t': 'error', 'data': '无法下均线止损单：无法获取合约数据'}))
-                return
+                except asyncio.TimeoutError:
+                    await ws.send(json.dumps({'t': 'error', 'data': '无法下均线止损单：无法获取合约数据'}))
+                    return
             
             # init ma order
             ma = talib.MA(np.array([b.close for b in bars[-period-1:]]), period)
@@ -195,6 +216,8 @@ class IBWS:
                 handler = self.recvMsg2Handler(msg, ws)
                 if handler:
                     await handler
+        except Exception as e:
+            logger.exception('middleware error:')
         finally:
             await self.unregiseter(ws)
 
@@ -202,6 +225,8 @@ class IBWS:
         if isinstance(msg, Dict) and msg.get('action'):
             if msg['action'] == 'get_all_trades':
                 return self.send_trades(ws)
+            elif msg['action'] == 'get_all_positions':
+                return self.send_positions(ws)
             elif msg['action'] == 'get_contracts':
                 contract = msg.get('data')
                 if contract:
@@ -238,7 +263,9 @@ class IBWS:
             elif msg['action'] == 'unsub_klines':
                 return self.unsub_klines(ws)
 
-    async def global_check(self):
+        
+
+    async def global_check(self): # check if there is no user and no processing event, if so , disconnect
         while True:
             await asyncio.sleep(120)
             print('USER:', self.USER)
@@ -252,10 +279,12 @@ class IBWS:
                     break
             else:
                 self.ib.disconnect()
+                self.ib.wrapper.reset()
      
 
     def run(self):
         start_server = websockets.serve(self.middleware, '0.0.0.0', 6789)
         self.ib.run(start_server)
-        handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
-        self.ib.run(*handlers, self.global_check())
+        trade_handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
+        position_handler = self.handle_position_event()
+        self.ib.run(*trade_handlers, position_handler, self.global_check())

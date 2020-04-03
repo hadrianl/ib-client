@@ -3,7 +3,15 @@
 		<!-- <Alert v-if="!isReady" type="error">未连接，请重新刷新页面或检查后端时候已连接</Alert> -->
 		<Split v-model="lr">
             <div slot="left" class="split-pane no-padding">
-                <TradeTable />
+				<Split v-model="tb" mode="vertical">
+					<div slot="top" class="split-pane">
+						<TradeTable />
+					</div>
+					<div slot="bottom" class="split-pane">
+						<PositionTable />
+					</div>
+				</Split>
+                
             </div>
             <div slot="right" class="split-pane">
 				<ContractItem></ContractItem>
@@ -16,13 +24,13 @@
 <script>
 import TradeTable from '../components/TradeTable.vue'
 import PlaceOrderTab from '../components/PlaceOrderTab.vue'
-// import BarChart from '../components/BarChart.vue'
+import PositionTable from '../components/PositionTable.vue'
 import ContractItem from '../components/ContractItem.vue'
 
 export default {
 	components: {
 		ContractItem,
-		// SplitLayout,
+		PositionTable,
 		TradeTable,
 		PlaceOrderTab,
 		// BarChart,
@@ -34,8 +42,8 @@ export default {
 	},
 	data(){
 		return {
-			lr: 0.8,
-			tb: 0.2
+			lr: 0.78,
+			tb: 0.7
 		}
 		},
 	beforeCreate: () => {
@@ -92,7 +100,7 @@ export default {
         padding: 10px;
     }
     .split-pane.no-padding{
-        height: 300px;
+        height: 450px;
         padding: 0;
     }
 </style>

@@ -49,6 +49,12 @@ new Vue({
 				duration: 0
 			})
 		})
+
+		this.$ibws.on('connect_sync', function(){
+			console.log('connect_sync')
+			_this.$ibws.send({'action': "get_all_trades"})
+			_this.$ibws.send({'action': "get_all_positions"})
+		})
   },
   render: h => h(App),
 }).$mount('#app')
