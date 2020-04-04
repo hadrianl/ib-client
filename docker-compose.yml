@@ -4,16 +4,22 @@ services:
     build:
       context:  ./ib-visual-backend
       dockerfile: Dockerfile
+    image: hadrianl/ib-client_backend
     ports: 
       - "6789:6789"
-    environment: 
-      IBHOST: "192.168.2.226"
-      IBPORT: "4002"
+    env_file:
+      - ib.env
+    restart: "on-failure"
+    # environment: 
+    #   IBHOST: "host.docker.internal"
+    #   IBPORT: "7497"
   frontend:
     build:
       context:  ./ib-visual-frontend
       dockerfile: Dockerfile
+    image: hadrianl/ib-client_frontend
     ports:
       - "8080:8080"
+    restart: "on-failure"
   
 
