@@ -39,7 +39,7 @@ class IBWebsocket extends EventEmitter {
     }
 
     isReady () {
-      return this.ws.readyState === this.WebSocket.OPEN
+      return this.ws && this.ws.readyState === this.WebSocket.OPEN
     }
 
     init (isReconnection = true) {

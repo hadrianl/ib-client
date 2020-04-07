@@ -25,7 +25,7 @@
                     </div>
                 </Menu>
             </Header>
-            <Content :style="{margin: '88px 20px 0', background: '#fff', minHeight: '500px'}">
+            <Content :style="{margin: '88px 20px 0', background: '#fff', minHeight: '600px'}">
 				<div v-if="activeItem=='order'">
 					<MainChart />
 				</div>
@@ -51,13 +51,14 @@ export default {
 	name: 'App',
 	components: {
 		MainChart,
-		BarChart
+		BarChart,
 	},
 	data() {
 		return {
 			activeItem: "order",
 			hostname: "localhost",
 			noedit: false,
+			contentHeight: document.body.clientHeight - 400
 		}
 	},
 	computed: {

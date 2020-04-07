@@ -1,13 +1,12 @@
 <template>
-    <Table :columns="columns" :data="positionsArr" :row-class-name="rowClassName">
+    <Table :height="height" :columns="columns" :data="positions" :row-class-name="rowClassName">
     </Table>
 </template>
 <script>
-import Vue from 'vue'
+// import Vue from 'vue'
 export default {
      data() {
         return {
-            positionsArr: [],
             columns : [
                     {title: 'conId',
                     width: 100,
@@ -42,38 +41,46 @@ export default {
             },
      props: {
 			height: {
-				type: String,
+                type: String,
+                defalut: "200",
 			},
         },
+    computed: {
+        positions() {
+            return this.$store.state.positionsList
+        }
+    },
     created() {
 
     },
     mounted() {
-        var _this = this
-        this.$ibws.on('positions', function (ps) {
-            console.log(ps)
-            _this.positionsArr = ps
-        })
+        // var _this = this
+        // this.$ibws.on('positions', function (ps) {
+        //     console.log(ps)
+        //     // _this.positionsArr = ps
+        //     _this.$store.commit('initPositions', ps)
+        // })
         
-        this.$ibws.on('position', function (p) {
-            console.log(p)
-            for (let i in _this.positionsArr){
-                if (_this.positionsArr[i].conId === p.conId){
-                    _this.positionsArr.splice(i, 1, p)
-                        return
-                    }
-                }
+        // this.$ibws.on('position', function (p) {
+        //     console.log(p)
+        //     // for (let i in _this.positionsArr){
+        //     //     if (_this.positionsArr[i].conId === p.conId){
+        //     //         _this.positionsArr.splice(i, 1, p)
+        //     //             return
+        //     //         }
+        //     //     }
     
-            _this.positionsArr.unshift(p)
+        //     // _this.positionsArr.unshift(p)
+        //     _this.$store.commit('updatePosition', p)
             
-        })
+        // })
 
-        this.$ibws.send({'action': "get_all_positions"})
+        // this.$ibws.send({'action': "get_all_positions"})
     },
     beforeDestroy: () => {
         // 实例销毁之前调用。在这一步，实例仍然完全可用。
-        Vue.$ibws.off('positions')
-        Vue.$ibws.off('position')
+        // Vue.$ibws.off('positions')
+        // Vue.$ibws.off('position')
     },
     methods: {
         rowClassName(row) {

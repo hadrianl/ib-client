@@ -55,6 +55,27 @@ new Vue({
 			_this.$ibws.send({'action': "get_all_trades"})
 			_this.$ibws.send({'action': "get_all_positions"})
 		})
+
+		this.$ibws.on('trades', function (ts) {
+            console.log(ts)
+            _this.$store.commit('initTrades', ts)
+        })
+        
+        this.$ibws.on('trade', function (t) {
+            console.log(t)
+            _this.$store.commit('updateTrade', t) 
+		})
+		
+		this.$ibws.on('positions', function (ps) {
+            console.log(ps)
+            _this.$store.commit('initPositions', ps)
+        })
+        
+        this.$ibws.on('position', function (p) {
+            console.log(p)
+            _this.$store.commit('updatePosition', p)
+            
+        })
   },
   render: h => h(App),
 }).$mount('#app')

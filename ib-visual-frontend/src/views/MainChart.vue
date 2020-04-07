@@ -5,13 +5,12 @@
             <div slot="left" class="split-pane no-padding">
 				<Split v-model="tb" mode="vertical">
 					<div slot="top" class="split-pane">
-						<TradeTable />
+						<TradeTable :height="430*tb"/>
 					</div>
 					<div slot="bottom" class="split-pane">
-						<PositionTable />
+						<PositionTable :height="430*(1-tb)"/>
 					</div>
 				</Split>
-                
             </div>
             <div slot="right" class="split-pane">
 				<ContractItem></ContractItem>
@@ -45,7 +44,7 @@ export default {
 			lr: 0.78,
 			tb: 0.7
 		}
-		},
+		},	
 	beforeCreate: () => {
 		// 在实例初始化之后，数据观测 (data observer) 和 event/watcher 事件配置之前被调用。
 	},

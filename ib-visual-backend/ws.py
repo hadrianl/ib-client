@@ -133,7 +133,7 @@ class IBWS:
         self.SUB_USER.add(ws)
         await ws.send(json.dumps({
             't': 'bars',
-            'data': [{'date': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[-120:]]}))
+            'data': [{'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[-120:]]}))
 
         if self.send_bar not in bars.updateEvent:
             bars.updateEvent += self.send_bar
@@ -148,7 +148,7 @@ class IBWS:
         for u in self.SUB_USER:
             self.ib.run(u.send(json.dumps({
                 't': 'bar',
-                'data': {'date': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
+                'data': {'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
 
     async def place_dynamic_order(self, contract, order: Order, options, ws):
         trigger_type = options['type']

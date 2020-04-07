@@ -1,387 +1,252 @@
 <template>
-    <v-chart :options="kline" @datazoom=dz @click=insertOrder></v-chart>
+    <div>
+        <div ref="barChart" class="ChartContainer" id="bar-chart"></div>
+        <RadioGroup v-model="action" type="button">
+            <Radio label="BUY">BUY</Radio>
+            <Radio label="SELL">SELL</Radio>
+        </RadioGroup>
+        <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
+        <InputNumber v-model="offset" :min="0" style="width: auto"></InputNumber>
+    </div>
+    
 </template>
 <script>
-// import ContractItem from '../ContractItem.vue'
+import { createChart, LineStyle } from 'lightweight-charts'
+import {Order} from '../plugins/datastructure.js'
+import {orderKey} from '../store/store.js'
 import Vue from 'vue'
-let upColor = '#00da3c'
-let downColor = '#ec0000'
-function calculateMA(dayCount, data) {
-    var result = [];
-    for (var i = 0, len = data.length; i < len; i++) {
-        if (i < dayCount) {
-            result.push('-')
-            continue
-        }
-        var sum = 0
-        for (var j = 0; j < dayCount; j++) {
-            sum += data[i - j]
-        }
-        result.push(sum / dayCount)
-    }
-    return result
-}
-
-
 export default {
-    components:{
-        // ContractItem
-    },
+    // const chart = createChart(this.$refs.barChart, {width: 1200, height: 500})
+    props: {
 
-    data() {
-        return {
-            // contractList: [],
-            kline: {
-                dataset: {
-                    dimensions: ['date', 'open', 'close', 'low', 'high', 'volume'],
-                    source: [],
-                },
-                legend: {
-                    top: 30,
-                    data: ['KLine', 'Volume', 'MA5', 'MA10', 'MA20', 'MA30']
-                    },
-                title: {
-                    text: "行情",
-                    left: 0,
-                },
-                tooltip: {
-                    trigger: "axis",
-                    axisPointer: {
-                        type: "cross"
-                    },
-                    backgroundColor: 'rgba(245, 245, 245, 0.8)',
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    padding: 10,
-                    textStyle: {
-                        color: '#000'
-                    },
-                    position: function (pos, params, el, elRect, size) {
-                        var obj = {top: 10};
-                        obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
-                        return obj;
-                    }
-                },
-                axisPointer: {
-                    link: {xAxisIndex: 'all'},
-                    label: {
-                        backgroundColor: '#777'
-                    }
-                },
-                toolbox: {
-                    feature: {
-                        dataZoom: {
-                            yAxisIndex: false
-                        },
-                        brush: {
-                            type: ['lineX', 'clear']
-                        }
-                    }
-                },
-                brush: {
-                    xAxisIndex: 'all',
-                    brushLink: 'all',
-                    outOfBrush: {
-                        colorAlpha: 0.1
-                    }
-                },
-                visualMap: {
-                    show: false,
-                    seriesIndex: 5,
-                    dimension: 2,
-                    pieces: [{
-                        value: 1,
-                        color: downColor
-                    }, {
-                        value: -1,
-                        color: upColor
-                    }]
-                },
-                grid: [
-                    {
-                        left: '10%',
-                        right: '8%',
-                        height: '50%'
-                    },
-                    {
-                        left: '10%',
-                        right: '8%',
-                        top: '63%',
-                        height: '16%'
-                    }
-                ],
-                xAxis: [
-                    {
-                        type: 'category',
-                        gridIndex: 0,
-                        scale: true,
-                        boundaryGap: false,
-                        axisLine: {onZero: false},
-                        splitLine: {show: false},
-                        splitNumber: 20,
-                        min: 'dataMin',
-                        max: 'dataMax',
-                        axisPointer: {
-                            z: 100
-                        }
-                    },
-                    {
-                        type: 'category',
-                        gridIndex: 1,
-                        scale: true,
-                        boundaryGap: false,
-                        axisLine: {onZero: false},
-                        axisTick: {show: false},
-                        splitLine: {show: false},
-                        axisLabel: {show: false},
-                        splitNumber: 20,
-                        min: 'dataMin',
-                        max: 'dataMax'
-                    }
-                ],
-                yAxis: [
-                    {
-                        scale: true,
-                        gridIndex: 0,
-                        splitArea: {
-                            show: true
-                        }
-                    },
-                    {
-                        scale: true,
-                        gridIndex: 1,
-                        splitNumber: 2,
-                        axisLabel: {show: false},
-                        axisLine: {show: false},
-                        axisTick: {show: false},
-                        splitLine: {show: false}
-                    }
-                ],
-                dataZoom: [
-                    {
-                        type: 'inside',
-                        xAxisIndex: [0, 1],
-                        start: 60,
-                        end: 100
-                    },
-                    {
-                        show: true,
-                        xAxisIndex: [0, 1],
-                        type: 'slider',
-                        top: '85%',
-                        start: 60,
-                        end: 100
-                    }
-                ],
-                series: [
-                    {
-                        name: "KLine",
-                        type: 'candlestick',
-                        itemStyle: {
-                            color: upColor,
-                            color0: downColor,
-                            borderColor: null,
-                            borderColor0: null
-                        },
-                        encode:{
-                            tooltip: [1, 2, 3, 4]
-                        },
-                        // tooltip: {
-                        //     formatter: function (param) {
-    
-                                // param = param[0]
-                                // return [
-                                //     'Date: ' + param.name + '<hr size=1 style="margin: 3px 0">',
-                                //     'Open: ' + param.data.open + '<br/>',
-                                //     'Close: ' + param.data.close + '<br/>',
-                                //     'Low: ' + param.data.low + '<br/>',
-                                //     'High: ' + param.data.high + '<br/>'
-                                // ].join('');
-                            // }
-                        // }
-                    },
-                    {
-                        name: 'Volume',
-                        type: 'bar',
-                        xAxisIndex: 1,
-                        yAxisIndex: 1,
-                        encode: {
-                            x: 'date',
-                            y: 'volume',
-                        }
-                    },
-                    {
-                        name: 'MA5',
-                        type: 'line',
-                        data: [],
-                        smooth: true,
-                        lineStyle: {
-                            opacity: 0.5
-                        }
-                    },
-                    {
-                        name: 'MA10',
-                        type: 'line',
-                        data: [],
-                        smooth: true,
-                        lineStyle: {
-                            opacity: 0.5
-                        }
-                    },
-                    {
-                        name: 'MA20',
-                        type: 'line',
-                        data: [],
-                        smooth: true,
-                        lineStyle: {
-                            opacity: 0.5
-                        }
-                    },
-                    {
-                        name: 'MA30',
-                        type: 'line',
-                        data: [],
-                        smooth: true,
-                        lineStyle: {
-                            opacity: 0.5
-                        }
-                    },
-                ]
-
-            }
-        }
     },
     computed:{
         contract() {
             return this.$store.state.currentContract
         }
     },
-    created: () => {
-		// 在实例创建完成后被立即调用。在这一步，实例已完成以下的配置：数据观测 (data observer)，属性和方法的运算，watch/event 事件回调。然而，挂载阶段还没开始，$el 属性目前不可见。
-        console.log('created')
+    data() {
+        return {
+            chart: null,
+            ohlcSeries: null,
+            volSeries: null,
+            orderLines: {},
+            action: "",
+            volume: 1,
+            offset: 0,
+        }
     },
-    beforeMount: () => {
-        // 在挂载开始之前被调用：相关的 render 函数首次被调用。
-        console.log('beforeMount')
-	},
-
     mounted() {
-        console.log('mounted')
-
-
-
-
-
-
+        this.chart = createChart(this.$refs.barChart, {width: 1300, height: 500})
+        this.ohlcSeries = this.chart.addCandlestickSeries()
+        this.volSeries = this.chart.addHistogramSeries({base: 0, overlay: true})
+        this.chart.applyOptions({
+            crosshair: {
+                mode: 0
+            }
+        })
+        this.ohlcSeries.applyOptions({
+            upColor: '#6495ED',
+            downColor: '#FF6347',
+            borderVisible: false,
+            wickVisible: true,
+            borderColor: '#000000',
+            wickColor: '#000000',
+            borderUpColor: '#4682B4',
+            borderDownColor: '#A52A2A',
+            wickUpColor: "#4682B4",
+            wickDownColor: "#A52A2A",
+            scaleMargins: {
+                top: 0.1,
+                bottom: 0.3
+            }
+        })
+        this.volSeries.applyOptions({
+            // base: 0,
+            // overlay: true,
+            scaleMargins: {
+                top: 0.6,
+                bottom: 0.02
+            }
+        })
         var _this = this
-        this.$ibws.on('bars', function(bars){
-            // console.log(bars)
-            _this.kline.dataset.source = bars
-            let c = []
-            for (var d of _this.kline.dataset.source){
-                c.push(d.close)
+        this.chart.subscribeClick(function(param) {
+            console.log(param)
+            // console.log(_this.ohlcSeries.coordinateToPrice(param.point.y))
+            const price = _this.ohlcSeries.coordinateToPrice(param.point.y)
+            // console.log(_this.ohlcSeries)
+            const lastPrice = _this.ohlcSeries.series().bars().last().value[3]
+            console.log(price, lastPrice, _this.action, _this.contract)
+            switch(true) {
+                case _this.contract && price > lastPrice && _this.action == 'BUY':
+                    {
+                        let order = new Order()
+                        order.outsideRth = true
+                        order.orderType = 'STP LMT'
+                        order.lmtPrice = parseInt(price + _this.offset)
+                        order.auxPrice = parseInt(price)
+                        order.action = 'BUY'
+                        order.totalQuantity = _this.volume
+                        console.log({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        _this.$ibws.send({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        break
+                    }    
+                case _this.contract && price < lastPrice && _this.action == 'BUY':
+                    {
+                        let order = new Order()
+                        order.outsideRth = true
+                        order.orderType = 'LMT'
+                        order.lmtPrice = parseInt(price)
+                        order.action = 'BUY'
+                        order.totalQuantity = _this.volume
+                        console.log({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        _this.$ibws.send({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        break
+                    }
+                case _this.contract && price < lastPrice && _this.action == 'SELL':
+                    {
+                        let order = new Order()
+                        order.outsideRth = true
+                        order.orderType = 'STP LMT'
+                        order.lmtPrice = parseInt(price - _this.offset)
+                        order.auxPrice = parseInt(price)
+                        order.action = 'SELL'
+                        order.totalQuantity = _this.volume
+                        console.log({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        _this.$ibws.send({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        break
+                    }
+                    
+                case _this.contract && price > lastPrice && _this.action == 'SELL':
+                    {
+                        let order = new Order()
+                        order.outsideRth = true
+                        order.orderType = 'LMT'
+                        order.lmtPrice = parseInt(price)
+                        order.action = 'SELL'
+                        order.totalQuantity = _this.volume
+                        console.log({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        _this.$ibws.send({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        break
+                    }
+                default:
+                    {
+                        _this.$Notice.error({
+                            title: 'Order Failed!',
+                            desc: "请先选择合约和开单方向",
+                            duration: 5
+                        })
+                    }
+               
             }
-            console.log(c)
-            _this.kline.series[2].data = calculateMA(5, c)
-            _this.kline.series[3].data = calculateMA(10, c)
-            _this.kline.series[4].data = calculateMA(20, c)
-            _this.kline.series[5].data = calculateMA(30, c)
-            console.log(_this.kline.series[1].data)
+
+            _this.action = ""
+
+
+
+            // _this.ohlcSeries.createPriceLine({
+            //                     price: price,
+            //                     color: 'green',
+            //                     lineWidth: 2,
+            //                     lineStyle: LineStyle.Dotted,
+            //                     axisLabelVisible: true,
+            //                 })
+            })
+
+        this.$ibws.on('trade', this.addOrderLine)
+
+        
+        this.$ibws.on('bars', function(bs) {
+            let volArr = []
+            bs.forEach((element, index) => {
+                let t = new Date(element.time).getTime() / 1000
+                bs[index].time = t
+                volArr.push({'time': t, 'value': element.volume})
+            })
+            _this.ohlcSeries.setData(bs)
+            _this.volSeries.setData(volArr)
+            // _this.$store.state.tradesList.forEach(t => _this.addOrderLine(t))
+            _this.$store.state.tradesList.forEach(t => console.log(t))
         })
 
-        this.$ibws.on('bar', function(bar){
-            // console.log(bar)
-            let i = _this.kline.dataset.source.length - 1
-            // console.log(_this.kline.dataset.source[i])
-            if (_this.kline.dataset.source[i] && bar.date == _this.kline.dataset.source[i].date){
-                _this.kline.dataset.source.splice(i, 1, bar)
-            }else{
-                _this.kline.dataset.source.push(bar)
-                let c = []
-                for (var d of _this.kline.dataset.source){
-                    c.push(d.close)
-                }
-                _this.kline.series[2].data = calculateMA(5, c)
-                _this.kline.series[3].data = calculateMA(10, c)
-                _this.kline.series[4].data = calculateMA(20, c)
-                _this.kline.series[5].data = calculateMA(30, c)
-            }
+        this.$ibws.on('bar', function(b) {
+            let t = new Date(b.time).getTime() / 1000
+            b.time = t
+            _this.ohlcSeries.update(b)
+            _this.volSeries.update({'time': t, 'value': b.volume})
         })
 
+        // this.$ibws.on('trade', function(t) {
 
+        // })
         if (this.contract){
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
         }
-        
 
-        // this.$ibws.on('contract', function(c) {
-        //     var flag = true
-        //     _this.contractsList.forEach(element => {
-        //         if (element.conId === c.conId){
-        //             flag = false
-        //         }
-        //     })
-        //     if (flag){
-        //         _this.contractsList.push(c)
-        //     }
-        // })
-    
     },
-    beforeUpdate: () => {
-        // 数据更新时调用，发生在虚拟 DOM 打补丁之前。这里适合在更新之前访问现有的 DOM，比如手动移除已添加的事件监听器。
-        console.log('beforeUpdate')
-	},
-	updated: () => {
-		// 由于数据更改导致的虚拟 DOM 重新渲染和打补丁，在这之后会调用该钩子。
-		// 当这个钩子被调用时，组件 DOM 已经更新，所以你现在可以执行依赖于 DOM 的操作。然而在大多数情况下，你应该避免在此期间更改状态。如果要相应状态改变，通常最好使用计算属性或 watcher 取而代之。
-        // 注意 updated 不会承诺所有的子组件也都一起被重绘。
-        console.log('updated')
-	},
-	activated: () => {
-        // keep-alive 组件激活时调用。
-        console.log('activated')
-	},
-	deactivated: () => {
-        // keep-alive 组件停用时调用。
-        console.log('deactivated')
-	},
-	beforeDestroy: () => {
+    methods: {
+        addOrderLine(t) {
+            const key = orderKey(t.order.orderId, t.order.permId, t.order.clientId)
+            // remove the line when the order is done
+            if(['Cancelled', 'ApiCancelled', 'Filled'].indexOf(t.orderStatus.status) != -1 && this.orderLines[key]){
+                this.ohlcSeries.removePriceLine(this.orderLines[key])
+                delete this.orderLines[key]
+                return
+            }
+
+            // check contract
+            if (t.contract.conId != this.contract.conId){
+                return
+            }
+
+            let line_option = {}
+            switch(t.order.orderType){
+            case 'LMT':
+                {
+                    line_option = {
+                    price: t.order.lmtPrice,
+                    color: t.order.action == 'BUY'?'red':'green',
+                    lineWidth: 2,
+                    lineStyle: LineStyle.Dotted,
+                    axisLabelVisible: true,
+                    }
+                    break
+                }
+                
+            case 'STP LMT':
+                {
+                    let isPreSubmitted = t.orderStatus.status == 'PreSubmitted'
+                    line_option = {
+                        price: isPreSubmitted?t.order.auxPrice:t.order.lmtPrice,
+                        color: t.order.action == 'BUY'?'red':'green',
+                        lineWidth: 2,
+                        lineStyle: isPreSubmitted?LineStyle.Dashed:LineStyle.Dotted,
+                        axisLabelVisible: true,
+                    }
+                    break
+                }
+                
+                }
+
+            if (this.orderLines[key]){
+                let line = this.orderLines[key]
+                line.applyOptions(line_option)
+            }else{
+                if(line_option) {
+                    let line = this.ohlcSeries.createPriceLine(line)
+                    this.orderLines[key] = line
+                    }
+            }
+        }
+    },
+    destroyed: () => {
         // 实例销毁之前调用。在这一步，实例仍然完全可用。
-        console.log('beforeDestroy')
+        console.log(this)
         Vue.$ibws.send({'action': 'unsub_klines'})
         Vue.$ibws.off('bars')
         Vue.$ibws.off('bar')
 	},
-	destroyed: () => {
-        // Vue 实例销毁后调用。调用后，Vue 实例指示的所有东西都会解绑定，所有的事件监听器会被移除，所有的子实例也会被销毁。
-        console.log('destroyed')
-	},
 
-    methods: {
-        dz(event) {
-            if (event.batch){
-                this.kline.dataZoom[0].start = event.batch[0].start
-                this.kline.dataZoom[0].end = event.batch[0].end
-                // this.kline.dataZoom[1].start = event.batch[0].start
-                // this.kline.dataZoom[1].end = event.batch[0].end
-            }else{
-                this.kline.dataZoom[0].start = event.start
-                this.kline.dataZoom[0].end = event.end
-                // this.kline.dataZoom[1].start = event.start
-                // this.kline.dataZoom[1].end = event.end
-            }
-            
-        },
-        insertOrder(x, y){
-            console.log(x)
-            console.log(y)
-        }
-    }
+
 }
 </script>
-<style scoped>
-    .echarts {
-        width: 1500px;
-        height: 600px;
-        }
-</style>
