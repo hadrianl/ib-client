@@ -19,10 +19,10 @@
                 <Radio label="SELL" style="color:green"></Radio>
             </RadioGroup>
         </FormItem>
-        <FormItem>
+        <!-- <FormItem> -->
             <Button @click="insertOrder()" size="large" :style="actionStyle">{{action?action:"NotSet"}}</Button>
             <Button @click="reset()" style="margin-left: 8px" size="large">RESET</Button>
-        </FormItem>
+        <!-- </FormItem> -->
 	</Form>
 </template>
 <script>

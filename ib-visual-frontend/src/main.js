@@ -15,7 +15,7 @@ Vue.prototype.$echarts = echarts
 window.ibws = ibws
 // ibws.on('message', console.log)
 
-new Vue({
+const vm = new Vue({
   store,
   mounted() {
     var _this = this
@@ -54,6 +54,7 @@ new Vue({
 			console.log('connect_sync')
 			_this.$ibws.send({'action': "get_all_trades"})
 			_this.$ibws.send({'action': "get_all_positions"})
+			_this.$ibws.send({'action': "get_all_fills"})
 		})
 
 		this.$ibws.on('trades', function (ts) {
@@ -75,7 +76,21 @@ new Vue({
             console.log(p)
             _this.$store.commit('updatePosition', p)
             
+		})
+		
+		this.$ibws.on('fills', function (fs) {
+            console.log(fs)
+            _this.$store.commit('initFills', fs)
+            
+		})
+		
+		this.$ibws.on('fill', function (f) {
+            console.log(f)
+            _this.$store.commit('updateFill', f)
+            
         })
   },
   render: h => h(App),
 }).$mount('#app')
+
+window.vm = vm

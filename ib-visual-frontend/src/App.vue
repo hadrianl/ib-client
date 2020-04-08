@@ -11,7 +11,7 @@
                         </MenuItem>
                         <MenuItem name="kline">
                             <Icon type="ios-keypad"></Icon>
-                            行情(暂时不可用)
+                            行情
                         </MenuItem>
                         <div>
                             <Icon type="ios-analytics"></Icon>

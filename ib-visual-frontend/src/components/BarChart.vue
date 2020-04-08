@@ -7,11 +7,12 @@
         </RadioGroup>
         <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
         <InputNumber v-model="offset" :min="0" style="width: auto"></InputNumber>
+        <Button type="info" @click="init">初始化</Button>
     </div>
     
 </template>
 <script>
-import { createChart, LineStyle } from 'lightweight-charts'
+import { createChart, LineStyle} from 'lightweight-charts'
 import {Order} from '../plugins/datastructure.js'
 import {orderKey} from '../store/store.js'
 import Vue from 'vue'
@@ -23,6 +24,24 @@ export default {
     computed:{
         contract() {
             return this.$store.state.currentContract
+        },
+        trades() {
+            return this.$store.getters.currenTradesList
+        },
+        fills() {
+            return this.$store.getters.currentFillsList
+        },
+        markers() {
+            let arr = []
+            this.fills.forEach(f => arr.push({
+                        time: new Date(f.execution.time).getTime() / 1000,
+                        position: f.execution.side==='BOT'?'belowBar':'aboveBar',
+                        shape: f.execution.side==='BOT'?'arrowUp':'arrowDown',
+                        color: f.execution.side==='BOT'?'red':'green',
+                        id: f.execution.permId,
+                    }))
+            arr.sort((a, b)=>a.time - b.time)
+            return arr
         }
     },
     data() {
@@ -30,7 +49,9 @@ export default {
             chart: null,
             ohlcSeries: null,
             volSeries: null,
+            maSeries: null,
             orderLines: {},
+            tradeMarkers: {},
             action: "",
             volume: 1,
             offset: 0,
@@ -40,6 +61,7 @@ export default {
         this.chart = createChart(this.$refs.barChart, {width: 1300, height: 500})
         this.ohlcSeries = this.chart.addCandlestickSeries()
         this.volSeries = this.chart.addHistogramSeries({base: 0, overlay: true})
+        // this.maSeries = this.chart.addLineSeries()
         this.chart.applyOptions({
             crosshair: {
                 mode: 0
@@ -62,71 +84,36 @@ export default {
             }
         })
         this.volSeries.applyOptions({
-            // base: 0,
-            // overlay: true,
             scaleMargins: {
                 top: 0.6,
                 bottom: 0.02
             }
         })
+
         var _this = this
         this.chart.subscribeClick(function(param) {
-            console.log(param)
-            // console.log(_this.ohlcSeries.coordinateToPrice(param.point.y))
             const price = _this.ohlcSeries.coordinateToPrice(param.point.y)
-            // console.log(_this.ohlcSeries)
             const lastPrice = _this.ohlcSeries.series().bars().last().value[3]
-            console.log(price, lastPrice, _this.action, _this.contract)
             switch(true) {
                 case _this.contract && price > lastPrice && _this.action == 'BUY':
                     {
-                        let order = new Order()
-                        order.outsideRth = true
-                        order.orderType = 'STP LMT'
-                        order.lmtPrice = parseInt(price + _this.offset)
-                        order.auxPrice = parseInt(price)
-                        order.action = 'BUY'
-                        order.totalQuantity = _this.volume
-                        console.log({'action': 'place_order', 'contract': _this.contract, 'order': order})
-                        _this.$ibws.send({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        _this.sendOrder('STP LMT', price, 'BUY')
                         break
                     }    
                 case _this.contract && price < lastPrice && _this.action == 'BUY':
                     {
-                        let order = new Order()
-                        order.outsideRth = true
-                        order.orderType = 'LMT'
-                        order.lmtPrice = parseInt(price)
-                        order.action = 'BUY'
-                        order.totalQuantity = _this.volume
-                        console.log({'action': 'place_order', 'contract': _this.contract, 'order': order})
-                        _this.$ibws.send({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        _this.sendOrder('LMT', price, 'BUY')
                         break
                     }
                 case _this.contract && price < lastPrice && _this.action == 'SELL':
                     {
-                        let order = new Order()
-                        order.outsideRth = true
-                        order.orderType = 'STP LMT'
-                        order.lmtPrice = parseInt(price - _this.offset)
-                        order.auxPrice = parseInt(price)
-                        order.action = 'SELL'
-                        order.totalQuantity = _this.volume
-                        console.log({'action': 'place_order', 'contract': _this.contract, 'order': order})
-                        _this.$ibws.send({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        _this.sendOrder('STP LMT', price, 'SELL')
                         break
                     }
                     
                 case _this.contract && price > lastPrice && _this.action == 'SELL':
                     {
-                        let order = new Order()
-                        order.outsideRth = true
-                        order.orderType = 'LMT'
-                        order.lmtPrice = parseInt(price)
-                        order.action = 'SELL'
-                        order.totalQuantity = _this.volume
-                        console.log({'action': 'place_order', 'contract': _this.contract, 'order': order})
-                        _this.$ibws.send({'action': 'place_order', 'contract': _this.contract, 'order': order})
+                        _this.sendOrder('LMT', price, 'SELL')
                         break
                     }
                 default:
@@ -141,40 +128,13 @@ export default {
             }
 
             _this.action = ""
-
-
-
-            // _this.ohlcSeries.createPriceLine({
-            //                     price: price,
-            //                     color: 'green',
-            //                     lineWidth: 2,
-            //                     lineStyle: LineStyle.Dotted,
-            //                     axisLabelVisible: true,
-            //                 })
             })
 
-        this.$ibws.on('trade', this.addOrderLine)
+        this.$ibws.on('trade', this.handleTrade)
 
-        
-        this.$ibws.on('bars', function(bs) {
-            let volArr = []
-            bs.forEach((element, index) => {
-                let t = new Date(element.time).getTime() / 1000
-                bs[index].time = t
-                volArr.push({'time': t, 'value': element.volume})
-            })
-            _this.ohlcSeries.setData(bs)
-            _this.volSeries.setData(volArr)
-            // _this.$store.state.tradesList.forEach(t => _this.addOrderLine(t))
-            _this.$store.state.tradesList.forEach(t => console.log(t))
-        })
+        this.$ibws.on('bars', this.handleBars)
 
-        this.$ibws.on('bar', function(b) {
-            let t = new Date(b.time).getTime() / 1000
-            b.time = t
-            _this.ohlcSeries.update(b)
-            _this.volSeries.update({'time': t, 'value': b.volume})
-        })
+        this.$ibws.on('bar', this.handleBar)
 
         // this.$ibws.on('trade', function(t) {
 
@@ -182,15 +142,21 @@ export default {
         if (this.contract){
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
         }
-
+        console.log(this.markers)
     },
     methods: {
-        addOrderLine(t) {
+        handleTrade(t) {
             const key = orderKey(t.order.orderId, t.order.permId, t.order.clientId)
             // remove the line when the order is done
             if(['Cancelled', 'ApiCancelled', 'Filled'].indexOf(t.orderStatus.status) != -1 && this.orderLines[key]){
                 this.ohlcSeries.removePriceLine(this.orderLines[key])
                 delete this.orderLines[key]
+
+                if(t.orderStatus.status == 'Filled'){
+                    console.log(this.markers)
+                    this.ohlcSeries.setMarkers(this.markers)
+                }
+
                 return
             }
 
@@ -237,7 +203,77 @@ export default {
                     this.orderLines[key] = line
                     }
             }
-        }
+        },
+        handleBars(bars) {
+            let volArr = []
+            // let maArr = []
+            bars.forEach((element, index) => {
+                let t = new Date(element.time).getTime() / 1000
+                bars[index].time = t
+                volArr.push({'time': t, 'value': element.volume})
+                // if(index < 5){
+                //     maArr.push({'time': t, 'value': '-'})
+                // }else{
+                //     let sum = 0
+                //     arr.slice(index - 5, index).forEach(b => sum += b.close)
+                //     maArr.push({'time': t, 'value':sum / 5})
+                // }
+            })
+            this.ohlcSeries.setData(bars)
+            this.volSeries.setData(volArr)
+            // this.maSeries.setData(maArr)
+            console.log(this.ohlcSeries)
+            // this.trades.forEach(t => this.handleTrade(t))
+        },
+        handleBar(bar) {
+            const t = new Date(bar.time).getTime() / 1000
+            bar.time = t
+            this.ohlcSeries.update(bar)
+            this.volSeries.update({'time': t, 'value': bar.volume})
+            // let sum = 0
+            // let size = this.ohlcSeries.series().data().size()
+            // for(let i = 5;i > 0; i--){
+            //     console.log(this.ohlcSeries.series().dataAt(size - i))
+            //     sum += this.ohlcSeries.series().dataAt(size - i).close
+            // }
+            // this.maSeries.update({'time': t, 'value': sum / 5})
+        },
+        sendOrder(orderType, price, action) {
+            // if no action , notice error
+            if(!(this.contract && action)) {
+                return
+            }
+
+            let order = new Order()
+            order.outsideRth = true
+            order.orderType = orderType
+            order.action = action
+            order.totalQuantity = this.volume
+
+            switch(orderType) {
+                case 'LMT':
+                    {
+                        order.lmtPrice = parseInt(price)
+                        break
+                    }
+                    
+                case 'STP LMT':
+                    {
+                        let offset = action == 'BUY'?this.offset:-this.offset
+                        order.lmtPrice = parseInt(price)
+                        order.auxPrice = order.lmtPrice + offset
+                        break
+                    }
+                default:
+                    return
+            }
+                 
+            console.log({'action': 'place_order', 'contract': this.contract, 'order': order})
+            this.$ibws.send({'action': 'place_order', 'contract': this.contract, 'order': order})
+        },
+        init() {
+            this.trades.forEach(t => this.handleTrade(t))
+        } 
     },
     destroyed: () => {
         // 实例销毁之前调用。在这一步，实例仍然完全可用。

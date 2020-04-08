@@ -7,7 +7,7 @@
 from ib_insync import *
 import websockets
 import asyncio
-from typing import Set, List, Dict
+from typing import Set, List, Dict, NamedTuple
 from dataclasses import is_dataclass, fields
 import contextlib
 import json
@@ -19,12 +19,17 @@ util.logToConsole()
 util.patchAsyncio()
 logger = logging.getLogger('ib-visual-backend')
 def convert(obj):
-    if is_dataclass(obj):
+    if isinstance(obj, (int, float)) or obj is None:
+        return obj
+    elif is_dataclass(obj):
+        print(obj)
         return {field.name: convert(getattr(obj, field.name)) for field in fields(obj)}
     elif isinstance(obj, List):
         return [convert(o) for o in obj]
-    elif isinstance(obj, (int, float)):
-        return obj
+    elif isinstance(obj, tuple):
+        print(obj)
+        Contract
+        return {k: convert(v) for k, v in zip(obj._fields, obj)}
     else:
         return str(obj)
 
@@ -79,6 +84,12 @@ class IBWS:
             for u in self.USER:
                 await u.send(json.dumps(msg))
 
+    async def handle_exec_event(self):
+        async for trade, fill in self.ib.execDetailsEvent:
+            msg = {'t': 'fill', 'data': convert(fill)}
+            for u in self.USER:
+                await u.send(json.dumps(msg))
+
     async def send_trades(self, ws):
         trades = self.ib.trades()
         msg = {'t': 'trades', 'data': []}
@@ -106,7 +117,12 @@ class IBWS:
                 await ws.send(json.dumps({'t': 'contract', 'data': c.__dict__}))
         except asyncio.TimeoutError:
             await ws.send(json.dumps({'t': 'error', 'data': '查询合约超时'}))
-   
+
+    async def send_fills(self, ws):
+        fills = self.ib.fills()
+        msg = {'t': 'fills', 'data': convert(fills)}
+        await ws.send(json.dumps(msg))
+  
     async def place_order(self, contract, order, ws):
         trade = self.ib.placeOrder(contract, order)
 
@@ -227,6 +243,8 @@ class IBWS:
                 return self.send_trades(ws)
             elif msg['action'] == 'get_all_positions':
                 return self.send_positions(ws)
+            elif msg['action'] == 'get_all_fills':
+                return self.send_fills(ws)    
             elif msg['action'] == 'get_contracts':
                 contract = msg.get('data')
                 if contract:
@@ -287,4 +305,5 @@ class IBWS:
         self.ib.run(start_server)
         trade_handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
         position_handler = self.handle_position_event()
-        self.ib.run(*trade_handlers, position_handler, self.global_check())
+        exec_handler = self.handle_exec_event()
+        self.ib.run(*trade_handlers, position_handler, exec_handler, self.global_check())

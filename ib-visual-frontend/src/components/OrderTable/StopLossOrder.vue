@@ -1,11 +1,53 @@
 <template>
     <Form :label-width="60" label-position="left">
         <!-- <ContractItem ref="contract" :contractsList="contractsList" /> -->
-        <FormItem label="Size">
+        <List border>
+            <!-- <ListItem>
+                <Row>
+                <i-col span="12">
+                    <DatePicker type="date" placeholder="Select date" style="width: 200px"></DatePicker>
+                </i-col>
+                <i-col span="12">
+                    <TimePicker type="time" placeholder="Select time" format="HH’mm’ss" style="width: 168px"></TimePicker>
+                </i-col>
+                </Row>
+            </ListItem> -->
+                
+            <ListItem>
+                <Button @click="setOrderBaseOnCost(openCost)">
+                    参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
+                </Button>
+            </ListItem>
+            <ListItem>
+                <Button @click="setOrderBaseOnCost(sessionCost)">
+                    参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
+                </Button>
+            </ListItem>
+            <ListItem>
+                <Button @click="setOrderBaseOnCost(totalCost)">
+                    参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
+                </Button> 
+            </ListItem>
+            <ListItem>
+                <InputNumber v-model="costOffset" :step="priceTick" ></InputNumber> 
+            </ListItem>
+        </List>
+        <!-- <FormItem label="Size">
             <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
-        </FormItem>
+        </FormItem> -->
         <FormItem label="Price">
-            <InputNumber v-model="limitPrice" disabled :max="maxPrice" :min="minPrice" :step="priceTick" style="width: auto"></InputNumber>
+            <Row>
+                <i-col span="14">
+                    <InputNumber v-model="limitPrice" disabled :max="maxPrice" :min="minPrice" :step="priceTick" style="width: auto"></InputNumber>
+                </i-col>
+                <i-col span="4">@</i-col>
+                <i-col span="6">
+                    <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
+                </i-col>
+            </Row>
+        </FormItem>
+        <FormItem label="Ref">
+            <Input v-model="orderRef" placeholder="order ref" clearable />
         </FormItem>
         <FormItem label="StopPrice" inline>
             <InputNumber v-model="stopPrice" :max="maxPrice" :min="minPrice" :step="priceTick"></InputNumber>
@@ -20,10 +62,10 @@
                 <Radio label="SELL" style="color:green"></Radio>
             </RadioGroup>
         </FormItem>
-        <FormItem>
+        <!-- <FormItem> -->
             <Button @click="insertOrder()" size="large" :style="actionStyle">{{action?action:"NotSet"}}</Button>
             <Button @click="reset()" style="margin-left: 8px" size="large">RESET</Button>
-        </FormItem>
+        <!-- </FormItem> -->
 	</Form>
 </template>
 <script>
@@ -47,6 +89,8 @@ export default {
 				priceDecs: 0,
                 maxPrice: Infinity,
                 minPrice: 0,
+                orderRef: "",
+                costOffset: 60,
 			};
         },
     mounted() {
@@ -81,7 +125,16 @@ export default {
         },
         contract() {
             return this.$store.state.currentContract
-        }
+        },
+        openCost() {
+            return this.$store.getters.currentOpenCost
+        },
+        sessionCost() {
+            return this.$store.getters.currentSessionCost
+        },
+        totalCost() {
+            return this.$store.getters.currentTotalCost
+        },
     },
     methods: {
         insertOrder() {
@@ -118,6 +171,23 @@ export default {
             this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
 
 
+        },
+        setOrderBaseOnCost(cost){
+            console.log(cost)
+            if(!cost[1]){
+                this.$Notice.error({
+                    title: 'Set Order Ref failed!',
+                    desc: "无法参考0持仓设置止损单",
+                    duration: 1
+                })
+                return
+            }
+
+            this.volume = Math.abs(cost[1])
+            const avgCost = parseInt(cost[0]/cost[1])
+            this.stopPrice = cost[1]>0? avgCost + this.costOffset:avgCost - this.costOffset
+            this.action = cost[1]>0?"SELL":"BUY"
+            this.orderRef = `sl-${this.volume}@${avgCost}`
         },
         reset() {
             // this.$refs.contract.currentContract = null

@@ -36,9 +36,10 @@ export default {
             // tradesArr: [],
             columns : [
                 {title: 'permId',
-                width: 100,
+                width: 120,
                 fixed: 'left',
                 sortable: true,
+                sortType: 'desc',
                  render: (h, params) => {
                      return h('div', params.row.order.permId)
                  }
@@ -75,7 +76,7 @@ export default {
                 // width: 70,
                 align: 'left',
                 render: (h, params) => {
-                     return h('div', params.row.orderStatus.filled)
+                     return h('div', params.row.order.filledQuantity)
                  }
                 },
                 {title: 'vol',
@@ -121,6 +122,7 @@ export default {
                             return row.order.orderId > 0
                     }
                 },
+                filteredValue: [1],
                 render: (h, params) => {
                      return h('div', params.row.orderStatus.status)
                  }

@@ -53,7 +53,7 @@ class IBWebsocket extends EventEmitter {
   
       this.ws.onmessage = function (message) {
         // eslint-disable-next-line no-eval
-        console.log('message', message)
+        // console.log('message', message)
         const msg = JSON.parse(message.data)
         _this.emit(msg.t, msg.data)
 

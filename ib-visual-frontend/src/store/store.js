@@ -25,11 +25,117 @@ const store = new Vuex.Store({
         contractsList: [],
         tradesList: [],
         positionsList: [],
+        fillsList: [],
         isConnected: false
     },
     getters: {
         availableTradesList: state => {
             return state.tradesList.filter(t => ['Cancelled', 'ApiCancelled'].indexOf(t) == -1)
+        },
+        currentFillsList: state => {
+            if(!state.currentContract){
+                return []
+            }
+            return state.fillsList.filter(f => f.contract.conId === state.currentContract.conId)
+        },
+        currenTradesList: state => {
+            if(!state.currentContract){
+                return []
+            }
+            return state.tradesList.filter(t => t.contract.conId == state.currentContract.conId)
+        },
+        currentOpenCost: state => {
+            if(!state.currentContract){
+                return [0, 0]
+            }
+            const conId = state.currentContract.conId
+
+            const fills = state.fillsList.filter(f => f.contract.conId == conId)
+
+            let arr = []
+            let priceSum = 0
+            let posSum = 0
+            let sessionBeginIndex = 0
+            for(let i in fills){
+                let f = fills[i]
+                let size = f.execution.side == 'BOT'?f.execution.shares:-f.execution.shares
+                priceSum += f.execution.price * size
+                posSum += size
+                if(posSum==0){
+                    sessionBeginIndex = i
+                }
+                arr.push([priceSum, posSum])
+            }
+            
+
+            const lastSession = arr.slice(sessionBeginIndex)
+            lastSession.reverse()
+            const fristState = lastSession[lastSession.length - 1]
+            let openCostState = [lastSession[0][0] - fristState[0], lastSession[0][1] - fristState[1]]
+            const pos = openCostState[1]
+            console.log(lastSession)
+            console.log(fristState)
+            console.log(openCostState)
+            for(let i in lastSession){
+                let currentState = lastSession[i]
+                if (Math.abs(currentState[1])>=Math.abs(pos)){
+                    openCostState = [(currentState[0]-fristState[0])/(currentState[1] - fristState[1])*pos, pos]
+                }
+            }
+            console.log(openCostState)
+            return openCostState
+        },
+        currentSessionCost: state => {
+            if(!state.currentContract){
+                return [0, 0]
+            }
+            const conId = state.currentContract.conId
+
+            const fills = state.fillsList.filter(f => f.contract.conId == conId)
+            let arr = []
+            let priceSum = 0
+            let posSum = 0
+            for(let f of fills){
+                let size = f.execution.side == 'BOT'?f.execution.shares:-f.execution.shares
+                priceSum += f.execution.price * size
+                posSum += size
+                arr.push([priceSum, posSum])
+            }
+
+            console.log(arr)
+            const lastState = arr[arr.length -1]
+            let fristState = arr[0]
+ 
+            for(let i = arr.length - 1; i >=0; i--){
+                if(arr[i][1] == 0){
+                    fristState = arr[i]
+                    break
+                }
+            }
+
+            return [lastState[0] - fristState[0], lastState[1] - fristState[1]]
+
+        },
+        currentTotalCost: state => {
+            if(!state.currentContract){
+                return [0, 0]
+            }
+
+            const conId = state.currentContract.conId
+
+            const fills = state.fillsList.filter(f => f.contract.conId == conId)
+
+            let arr = []
+            let priceSum = 0
+            let posSum = 0
+            for(let f of fills){
+                let size = f.execution.side == 'BOT'?f.execution.shares:-f.execution.shares
+                priceSum += f.execution.price * size
+                posSum += size
+                arr.push([priceSum, posSum])
+            }
+
+            return arr[arr.length - 1]
         }
     },
     mutations:{
@@ -66,7 +172,7 @@ const store = new Vuex.Store({
                 }
             }
 
-            state.tradesList.unshift(trade)
+            state.tradesList.push(trade)
         },
 
         initPositions(state, positions) {
@@ -81,7 +187,24 @@ const store = new Vuex.Store({
                     }
                 }
     
-            state.positionsList.unshift(position)
+            state.positionsList.push(position)
+        },
+
+        initFills(state, fills) {
+            fills.forEach((v, i) => fills[i].time = new Date(v.time).getTime() / 1000)
+            fills.sort((a, b) => a.time - b.time)
+            state.fillsList = fills
+        },
+
+        updateFill(state, fill) {
+            // for(let i in state.fillsList){
+            //     if(state.fillsList[i].execution.execId === fill.execution.execId){
+            //         state.fillsList.splice(i, 1, fill)
+            //         return
+            //     }
+            // }
+
+            state.fillsList.push(fill)
         },
 
         setConnectState(state, b) {
