@@ -1,5 +1,144 @@
 <template>
-<div class="layout">
+  <v-app id="inspire">
+    <v-navigation-drawer
+      v-model="drawer"
+      app
+      clipped
+    >
+      <v-list dense>
+        <v-list-item
+          v-for="item in items"
+          :key="item.text"
+          link
+        >
+          <v-list-item-action>
+            <v-icon>{{ item.icon }}</v-icon>
+          </v-list-item-action>
+          <v-list-item-content>
+            <v-list-item-title>
+              {{ item.text }}
+            </v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+        <v-subheader class="mt-4 grey--text text--darken-1">------------</v-subheader>
+        <!-- <v-list>
+          <v-list-item
+            v-for="item in items2"
+            :key="item.text"
+            link
+          >
+            <v-list-item-avatar>
+              <img
+                :src="`https://randomuser.me/api/portraits/men/${item.picture}.jpg`"
+                alt=""
+              >
+            </v-list-item-avatar>
+            <v-list-item-title v-text="item.text" />
+          </v-list-item>
+        </v-list> -->
+        <!-- <v-list-item
+          class="mt-4"
+          link
+        >
+          <v-list-item-action>
+            <v-icon color="grey darken-1">mdi-plus-circle-outline</v-icon>
+          </v-list-item-action>
+          <v-list-item-title class="grey--text text--darken-1">Browse Channels</v-list-item-title>
+        </v-list-item>
+        <v-list-item link>
+          <v-list-item-action>
+            <v-icon color="grey darken-1">mdi-settings</v-icon>
+          </v-list-item-action>
+          <v-list-item-title class="grey--text text--darken-1">Manage Subscriptions</v-list-item-title>
+        </v-list-item> -->
+      </v-list>
+    </v-navigation-drawer>
+
+    <v-app-bar
+      app
+      clipped-left
+      color="red"
+      dense
+    >
+      <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
+	  <v-text-field
+	  	v-model="hostname"
+	  	placeholder="backend hostname"
+		:disabled=noedit
+		single-line
+	  />
+	  <v-btn color="primary" @click.stop=updateBackendWS>连接</v-btn>
+      <!-- <v-icon
+        class="mx-4"
+        large
+      >
+        mdi-youtube
+      </v-icon> -->
+      <!-- <v-toolbar-title class="mr-12 align-center">
+        <span class="title">Youtube</span>
+      </v-toolbar-title> -->
+      <v-spacer />
+      <v-row
+        align="center"
+        style="max-width: 650px"
+      >
+        <v-text-field
+          :append-icon-cb="() => {}"
+          placeholder="输入contract..."
+          single-line
+          append-icon="mdi-magnify"
+          color="white"
+          hide-details
+        />
+      </v-row>
+    </v-app-bar>
+
+    <v-content>
+      <v-container class="fill-height">
+        <!-- <v-row
+          justify="center"
+          align="center"
+        >
+          <v-col class="shrink">
+            <v-tooltip right>
+              <template v-slot:activator="{ on }">
+                <v-btn
+                  :href="source"
+                  icon
+                  large
+                  target="_blank"
+                  v-on="on"
+                >
+                  <v-icon large>mdi-code-tags</v-icon>
+                </v-btn>
+              </template>
+              <span>Source</span>
+            </v-tooltip>
+            <v-tooltip right>
+              <template v-slot:activator="{ on }">
+                <v-btn
+                  icon
+                  large
+                  href="https://codepen.io/johnjleider/pen/aezMOO"
+                  target="_blank"
+                  v-on="on"
+                >
+                  <v-icon large>mdi-codepen</v-icon>
+                </v-btn>
+              </template>
+              <span>Codepen</span>
+            </v-tooltip>
+          </v-col>
+        </v-row> -->
+      </v-container>
+    </v-content>
+  </v-app>
+
+
+
+
+
+<!-- <div class="layout">
         <Layout>
             <Header :style="{position: 'fixed', width: '100%'}">
                 <Menu mode="horizontal" theme="dark" :active-name="activeItem" @on-select="selectItem">
@@ -16,12 +155,8 @@
                         <div>
                             <Icon type="ios-analytics"></Icon>
                             <Input v-model="hostname" placeholder="Enter hostname...default: localhost" size="small" style="width: 200px" :disabled="noedit"/>
-							<Button type="success" ghost @click=updateBackendWS>连接</Button>
+							<Button type="success" ghost @click=connectBackendWS>连接</Button>
                         </div>
-                        <!-- <MenuItem name="4">
-                            <Icon type="ios-paper"></Icon>
-                            Item 4
-                        </MenuItem> -->
                     </div>
                 </Menu>
             </Header>
@@ -40,7 +175,7 @@
 			</Footer>
         </Layout>
 
-  </div>
+  </div> -->
 </template>
 
 <script>
@@ -68,7 +203,7 @@ export default {
 		selectItem(name) {
 			this.activeItem=name
 		},
-		updateBackendWS(){
+		connectBackendWS(){
 			this.$ibws.setUrl(this.hostname)
 			this.$ibws.init(false)
 			this.noedit = true

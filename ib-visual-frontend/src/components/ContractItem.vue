@@ -1,6 +1,25 @@
 <template>
     <div>
-    <AutoComplete clearable	
+        <v-autocomplete
+        :items="contractsList"
+        :search-input.sync="search"
+        @input="selectContract"
+        @clear="clearContract"
+        color="white"
+        hide-no-data
+        item-text= "symbol"
+        item-value="contract"
+        label="Contract"
+        placeholder="输入合约"
+        prepend-icon="mdi-ios-search"
+        chips
+        small-chips
+        outlined
+        clearable
+        return-object
+      ></v-autocomplete>
+
+    <!-- <AutoComplete clearable	
     icon="ios-search"
     v-model="condName" 
     :data="contractsList" 
@@ -12,7 +31,7 @@
         <span>{{c.symbol}}{{c.lastTradeDateOrContractMonth.substr(2, 4)}} conId:{{c.conId}} </span>
     </Option>
     </AutoComplete>
-    <Alert v-if="contract" type="success" show-icon>ConId：{{contract.conId}}</Alert>
+    <Alert v-if="contract" type="success" show-icon>ConId：{{contract.conId}}</Alert> -->
     </div>
 </template>
 <script>
@@ -30,42 +49,39 @@ export default {
             return this.$store.state.currentContract
         },
         contractsList() {
-            return this.$store.state.contractsList
+            let cl = []
+            this.$store.state.contractsList.forEach(c => {
+                cl.push({
+                    'symbol': c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4),
+                    'contract': c,
+                })
+            })
+            return cl
         }
     },
     mounted() {
         var _this = this
         this.$ibws.on('contract', function(c) {
-            // var flag = true
-            // _this.contractsList.forEach(element => {
-            //     if (element.conId === c.conId){
-            //         flag = false
-            //     }
-            // })
-            // if (flag){
-            //     _this.contractsList.push(c)
-            // }
             _this.$store.commit('addContract', c)
         })
     },
     methods: {
-        selectContract(item) {
-            var contract = null
-            this.contractsList.forEach(function(c){
-                if ((c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4)) === item){
-                    contract = c
-                }
-            })
+        selectContract(contract) {
             this.$store.commit('selectContract', contract)
 
             // this.$ibws.send({'action': 'sub_klines','contract': contract})
         },
-        querySearch(queryString) {
-            var ret = patt.exec(queryString)
+        clearContract() {
+            this.$store.commit('clearContract')
+        },
+    },
+    watch: {
+        search(val) {
+            var ret = patt.exec(val)
             if (ret) {
                 let flag = true
                 this.contractsList.forEach(function(c){
-                if ((c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4)) === ret[0]){
+                if (c.symbol === ret[0]){
                     flag = false
                 }
                 })
@@ -79,10 +95,7 @@ export default {
                 }
 
             }
-        },
-        clearContract() {
-            this.$store.commit('clearContract')
-        },
+        }
     }
 }
 </script>

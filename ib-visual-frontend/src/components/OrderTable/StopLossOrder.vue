@@ -1,18 +1,53 @@
 <template>
-    <Form :label-width="60" label-position="left">
-        <!-- <ContractItem ref="contract" :contractsList="contractsList" /> -->
+    <v-form>
+        <v-list dense>
+            <v-subheader>参考成本</v-subheader>
+            <v-list-item-group>
+                <v-list-item>
+                    <v-btn @click="setOrderBaseOnCost(openCost)">
+                        参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
+                    </v-btn>
+                </v-list-item>
+                <v-list-item>
+                    <v-btn @click="setOrderBaseOnCost(sessionCost)">
+                        参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
+                    </v-btn>
+                </v-list-item>
+                <v-list-item>
+                    <v-btn @click="setOrderBaseOnCost(totalCost)">
+                        参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
+                    </v-btn>
+                </v-list-item>
+                <v-list-item>
+                    <v-text-field v-model="costOffset" label="costOffset" type="number" outlined></v-text-field>
+                </v-list-item>      
+            </v-list-item-group>        
+        </v-list>
+        <v-row>
+            <v-text-field v-model="limitPrice" label="limitPrice" type="number" disabled outlined></v-text-field>
+            <v-text-field v-model="volume" label="volume" type="number" outlined></v-text-field>
+        </v-row>
+        <v-row>
+            <v-text-field v-model="stopPrice" label="stopPrice" type="number" outlined></v-text-field>
+            <v-text-field v-model="offset" label="offset" type="number" outlined></v-text-field>
+        </v-row>
+        <v-text-field v-model="orderRef" label="orderRef" placeholder="Order Ref" clearable></v-text-field>
+        <v-btn-toggle v-model="action" rounded>
+            <v-btn value="BUY">BUY</v-btn>
+            <v-btn value="SELL">SELL</v-btn>
+        </v-btn-toggle>
+        <v-row>
+            <v-btn @click="insertOrder()">{{action?action:"NotSet"}}</v-btn>
+            <v-btn @click="reset()">RESET</v-btn>
+        </v-row>
+    </v-form>
+
+
+
+
+    <!-- <Form :label-width="60" label-position="left">
         <List border>
-            <!-- <ListItem>
-                <Row>
-                <i-col span="12">
-                    <DatePicker type="date" placeholder="Select date" style="width: 200px"></DatePicker>
-                </i-col>
-                <i-col span="12">
-                    <TimePicker type="time" placeholder="Select time" format="HH’mm’ss" style="width: 168px"></TimePicker>
-                </i-col>
-                </Row>
-            </ListItem> -->
-                
+             
             <ListItem>
                 <Button @click="setOrderBaseOnCost(openCost)">
                     参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
@@ -32,9 +67,6 @@
                 <InputNumber v-model="costOffset" :step="priceTick" ></InputNumber> 
             </ListItem>
         </List>
-        <!-- <FormItem label="Size">
-            <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
-        </FormItem> -->
         <FormItem label="Price">
             <Row>
                 <i-col span="14">
@@ -62,11 +94,9 @@
                 <Radio label="SELL" style="color:green"></Radio>
             </RadioGroup>
         </FormItem>
-        <!-- <FormItem> -->
             <Button @click="insertOrder()" size="large" :style="actionStyle">{{action?action:"NotSet"}}</Button>
             <Button @click="reset()" style="margin-left: 8px" size="large">RESET</Button>
-        <!-- </FormItem> -->
-	</Form>
+	</Form> -->
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'

@@ -1,12 +1,29 @@
 <template>
-    <Table :height="height" :columns="columns" :data="trades" :row-class-name="rowClassName">
+    <v-data-table
+    :headers="headers"
+    :items="trades"
+    :items-per-page="5"
+    class="elevation-1"
+    >
+        <template v-slot: item.handle="{ item }">
+            <v-btn 
+            v-if="isDone(item.status)"
+            @click="cancelOrder(item.order)"
+            color="error"
+            small
+            ></v-btn>
+        </template>
+    </v-data-table>
+    
+
+    <!-- <Table :height="height" :columns="columns" :data="trades" :row-class-name="rowClassName">
         <template slot-scope="{ row }" slot="handle">
             <Button v-if="isDone(row.orderStatus.status)" 
             type="error" 
             size="small" 
             @click="cancelOrder(row.order)">Cancell</Button>
         </template>
-    </Table>
+    </Table> -->
 </template>
 
 <script>
@@ -34,112 +51,73 @@ export default {
             // cancelled_status: ['Cancelled', 'ApiCancelled'],
             // done_status: ['Cancelled', 'ApiCancelled', 'Filled'],
             // tradesArr: [],
-            columns : [
-                {title: 'permId',
-                width: 120,
-                fixed: 'left',
-                sortable: true,
-                sortType: 'desc',
-                 render: (h, params) => {
-                     return h('div', params.row.order.permId)
-                 }
+            headers : [
+                {
+                    text: 'permId',
+                    value: 'permId',
+                    width: 120,
+                    sortable: true,
+                    sort: (a, b) => a-b
                 },
-                {title: 'c',
-                //  width: 30,
-                 align: 'left',
-                 render: (h, params) => {
-                     return h('div', params.row.order.clientId)
-                 }
+                {
+                    text: 'c',
+                    value: 'clientId',
                 },
-                {title: 'orderId',
-                //  width: 100,
-                 align: 'left',
-                 render: (h, params) => {
-                     return h('div', params.row.order.orderId)
-                 }
+                {
+                    text: 'orderId',
+                    value: 'orderId',
+                    align: 'start',
                 },
-                {title: 'symbol',
-                // width: 100,
-                align: 'left',
-                render: (h, params) => {
-                     return h('div', params.row.contract.symbol + params.row.contract.lastTradeDateOrContractMonth.substr(2, 4))
-                 }
+                {
+                    text: 'symbol',
+                    value: 'symbol',
                 },
-                {title: 'action',
-                // width: 80,
-                align: 'left',
-                render: (h, params) => {
-                     return h('div', params.row.order.action)
-                 }
+                {
+                    text: 'action',
+                    value: 'action',
                 },
-                {title: 'filled',
-                // width: 70,
-                align: 'left',
-                render: (h, params) => {
-                     return h('div', params.row.order.filledQuantity)
-                 }
+                {
+                    text: 'filledQty',
+                    value: 'filledQty',
                 },
-                {title: 'vol',
-                // width: 70,
-                align: 'left',
-                render: (h, params) => {
-                     return h('div', params.row.order.totalQuantity)
-                 }
+                {
+                    text: 'totalQty',
+                    value: 'totalQty',
                 },
-                {title: 'lmtPrice',
-                // width: 100,
-                align: 'left',
-                render: (h, params) => {
-                     return h('div', params.row.order.lmtPrice)
-                 }
+                {
+                    text: 'lmtPrice',
+                    value: 'lmtPrice',   
                 },
-                {title: 'auxPrice',
-                // width: 100,
-                align: 'left',
-                render: (h, params) => {
-                     return h('div', params.row.order.auxPrice)
-                 }
+                {
+                    text: 'auxPrice',
+                    value: 'auxPrice',
                 },
-                {title: 'status',
-                // width: 120,
-                align: 'center',
-                filters:[
-                    {label: '有效订单',
-                    value: 1},
-                    {label: '运行中订单',
-                    value: 2},
-                    {label: '客户端订单',
-                    value: 3},
-                ],
-                filterMultiple: false,
-                filterMethod: (value, row) => {
-                    switch(value){
-                        case 1:
-                            return ['Cancelled', 'ApiCancelled'].indexOf(row.orderStatus.status) == -1
-                        case 2:
-                            return ['Submitted', 'PreSubmitted'].indexOf(row.orderStatus.status) != -1
-                        case 3:
-                            return row.order.orderId > 0
-                    }
+                {
+                    text: 'status',
+                    value: 'status',
+                    filterable: true,
+                    align: 'center',
+                    filter: (value, search, item) => {
+                        let status = item.status
+                        switch(value){
+                            case 1:
+                                return ['Cancelled', 'ApiCancelled'].indexOf(status) == -1
+                            case 2:
+                                return ['Submitted', 'PreSubmitted'].indexOf(status) != -1
+                            case 3:
+                                return row.order.orderId > 0
+                        }
+                    },
                 },
-                filteredValue: [1],
-                render: (h, params) => {
-                     return h('div', params.row.orderStatus.status)
-                 }
+                {
+                    text: 'orderRef',
+                    value: 'orderRef',
                 },
-                {title: 'orderRef',
-                width: 100,
-                align: 'left',
-                render: (h, params) => {
-                     return h('div', params.row.order.orderRef)
-                 }
-                },
-                {title: 'handle',
-                 slot: 'handle',
-                 width: 100,
-                 align: 'center'
+                {
+                    text: '',
+                    value: 'handle',
+                    sortable: false,
                 }
-
             ]
         }
     },
@@ -154,27 +132,31 @@ export default {
     },
     computed: {
         trades() {
-            return this.$store.state.tradesList
+            let trades = []
+            this.$store.state.tradesList.forEach(v => {
+                trades.push({
+                    permId: v.order.permId,
+                    clientId: v.order.clientId,
+                    orderId: v.order.orderId,
+                    symbol: v.contract.symbol + v.contract.lastTradeDateOrContractMonth.substr(2, 4),
+                    action: v.order.action,
+                    filledQty: v.order.filledQuantity,
+                    totalQty: v.order.totalQuantity,
+                    lmtPrice: v.order.lmtPrice,
+                    auxPrice: v.order.auxPrice,
+                    status: v.orderStatus.status,
+                    orderRef: v.order.orderRef,
+                    order: v.order,
+                })
+            })
+            return trades
         }
     },
     mounted() {
-        // var _this = this
-        // this.$ibws.on('trades', function (ts) {
-        //     console.log(ts)
-        //     _this.$store.commit('initTrades', ts)
-        // })
-        
-        // this.$ibws.on('trade', function (t) {
-        //     console.log(t)
-        //     _this.$store.commit('updateTrade', t) 
-        // })
 
-        // this.$ibws.send({'action': "get_all_trades"})
     },
     beforeDestroy: () => {
-        // 实例销毁之前调用。在这一步，实例仍然完全可用。
-        // Vue.$ibws.off('trades')
-        // Vue.$ibws.off('trade')
+
 	},
     methods: {
         isDone(status) {
@@ -183,20 +165,20 @@ export default {
         cancelOrder(order) {
             this.$ibws.send({'action':'cancel_order', 'order': order})
         },
-        rowClassName(row) {
-            switch (row.orderStatus.status){
-                case 'Filled':
-                    return 'table-filled-row'
-                case 'Submitted':
-                    return 'table-submitted-row'
-                case 'PreSubmitted':
-                    return 'table-presubmitted-row'
-                case 'Cancelled':
-                    return 'table-cancelled-row'
-                default:
-                    return ''
-            }
-        }
+        // rowClassName(row) {
+        //     switch (row.orderStatus.status){
+        //         case 'Filled':
+        //             return 'table-filled-row'
+        //         case 'Submitted':
+        //             return 'table-submitted-row'
+        //         case 'PreSubmitted':
+        //             return 'table-presubmitted-row'
+        //         case 'Cancelled':
+        //             return 'table-cancelled-row'
+        //         default:
+        //             return ''
+        //     }
+        // }
     }
 }
 </script>
