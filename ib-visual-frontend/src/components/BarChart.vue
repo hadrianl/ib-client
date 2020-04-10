@@ -7,7 +7,7 @@
         </RadioGroup>
         <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
         <InputNumber v-model="offset" :min="0" style="width: auto"></InputNumber>
-        <Button type="info" @click="init">初始化</Button>
+        <!-- <Button type="info" @click="init">初始化</Button> -->
     </div>
     
 </template>
@@ -34,7 +34,7 @@ export default {
         markers() {
             let arr = []
             this.fills.forEach(f => arr.push({
-                        time: new Date(f.execution.time).getTime() / 1000,
+                        time: new Date(f.execution.time).getTime() / 1000 + 28800,
                         position: f.execution.side==='BOT'?'belowBar':'aboveBar',
                         shape: f.execution.side==='BOT'?'arrowUp':'arrowDown',
                         color: f.execution.side==='BOT'?'red':'green',
@@ -58,7 +58,23 @@ export default {
         }
     },
     mounted() {
-        this.chart = createChart(this.$refs.barChart, {width: 1300, height: 500})
+        const chartOptions = {
+            width: 1300, 
+            height: 500,
+            timeScale: {
+                rightOffset: 10,
+                // barSpacing: number;
+                fixLeftEdge: true,
+                // lockVisibleTimeRangeOnResize: true,
+                rightBarStaysOnScroll: true,
+                // borderVisible: boolean;
+                // borderColor: string;
+                // visible: boolean;
+                timeVisible: true,
+                secondsVisible: true
+            }
+        }
+        this.chart = createChart(this.$refs.barChart, chartOptions)
         this.ohlcSeries = this.chart.addCandlestickSeries()
         this.volSeries = this.chart.addHistogramSeries({base: 0, overlay: true})
         // this.maSeries = this.chart.addLineSeries()
@@ -90,45 +106,9 @@ export default {
             }
         })
 
-        var _this = this
-        this.chart.subscribeClick(function(param) {
-            const price = _this.ohlcSeries.coordinateToPrice(param.point.y)
-            const lastPrice = _this.ohlcSeries.series().bars().last().value[3]
-            switch(true) {
-                case _this.contract && price > lastPrice && _this.action == 'BUY':
-                    {
-                        _this.sendOrder('STP LMT', price, 'BUY')
-                        break
-                    }    
-                case _this.contract && price < lastPrice && _this.action == 'BUY':
-                    {
-                        _this.sendOrder('LMT', price, 'BUY')
-                        break
-                    }
-                case _this.contract && price < lastPrice && _this.action == 'SELL':
-                    {
-                        _this.sendOrder('STP LMT', price, 'SELL')
-                        break
-                    }
-                    
-                case _this.contract && price > lastPrice && _this.action == 'SELL':
-                    {
-                        _this.sendOrder('LMT', price, 'SELL')
-                        break
-                    }
-                default:
-                    {
-                        _this.$Notice.error({
-                            title: 'Order Failed!',
-                            desc: "请先选择合约和开单方向",
-                            duration: 5
-                        })
-                    }
-               
-            }
-
-            _this.action = ""
-            })
+        // var _this = this
+        this.chart.subscribeClick(this.onChartClick)
+        // this.chart.subscribeVisibleTimeRangeChange(this.onTimeRangeChange)
 
         this.$ibws.on('trade', this.handleTrade)
 
@@ -136,35 +116,37 @@ export default {
 
         this.$ibws.on('bar', this.handleBar)
 
-        // this.$ibws.on('trade', function(t) {
+        this.$ibws.once('bars', this.initAddition)
 
-        // })
         if (this.contract){
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
         }
         console.log(this.markers)
+        console.log(this)
     },
     methods: {
         handleTrade(t) {
+            // check contract
+            if (t.contract.conId != this.contract.conId){
+                return
+            }
+
             const key = orderKey(t.order.orderId, t.order.permId, t.order.clientId)
             // remove the line when the order is done
-            if(['Cancelled', 'ApiCancelled', 'Filled'].indexOf(t.orderStatus.status) != -1 && this.orderLines[key]){
-                this.ohlcSeries.removePriceLine(this.orderLines[key])
-                delete this.orderLines[key]
-
+            if(['Cancelled', 'ApiCancelled', 'Filled'].indexOf(t.orderStatus.status) != -1){
+                if(this.orderLines[key]){
+                    this.ohlcSeries.removePriceLine(this.orderLines[key])
+                    delete this.orderLines[key]
+                }
+                
                 if(t.orderStatus.status == 'Filled'){
-                    console.log(this.markers)
                     this.ohlcSeries.setMarkers(this.markers)
                 }
 
                 return
             }
 
-            // check contract
-            if (t.contract.conId != this.contract.conId){
-                return
-            }
-
+      
             let line_option = {}
             switch(t.order.orderType){
             case 'LMT':
@@ -197,18 +179,17 @@ export default {
             if (this.orderLines[key]){
                 let line = this.orderLines[key]
                 line.applyOptions(line_option)
-            }else{
-                if(line_option) {
-                    let line = this.ohlcSeries.createPriceLine(line)
-                    this.orderLines[key] = line
-                    }
-            }
+            }else if(line_option) {
+                console.log(line_option)
+                let line = this.ohlcSeries.createPriceLine(line_option)
+                this.orderLines[key] = line
+                }
         },
         handleBars(bars) {
             let volArr = []
             // let maArr = []
             bars.forEach((element, index) => {
-                let t = new Date(element.time).getTime() / 1000
+                let t = new Date(element.time).getTime() / 1000 + 28800
                 bars[index].time = t
                 volArr.push({'time': t, 'value': element.volume})
                 // if(index < 5){
@@ -226,7 +207,7 @@ export default {
             // this.trades.forEach(t => this.handleTrade(t))
         },
         handleBar(bar) {
-            const t = new Date(bar.time).getTime() / 1000
+            const t = new Date(bar.time).getTime() / 1000 + 28800
             bar.time = t
             this.ohlcSeries.update(bar)
             this.volSeries.update({'time': t, 'value': bar.volume})
@@ -237,6 +218,54 @@ export default {
             //     sum += this.ohlcSeries.series().dataAt(size - i).close
             // }
             // this.maSeries.update({'time': t, 'value': sum / 5})
+        },
+        onChartClick(param) {
+            const price = this.ohlcSeries.coordinateToPrice(param.point.y)
+            const lastPrice = this.ohlcSeries.series().bars().last().value[3]
+            switch(true) {
+                case this.contract && price > lastPrice && this.action == 'BUY':
+                    {
+                        this.sendOrder('STP LMT', price, 'BUY')
+                        break
+                    }    
+                case this.contract && price < lastPrice && this.action == 'BUY':
+                    {
+                        this.sendOrder('LMT', price, 'BUY')
+                        break
+                    }
+                case this.contract && price < lastPrice && this.action == 'SELL':
+                    {
+                        this.sendOrder('STP LMT', price, 'SELL')
+                        break
+                    }
+                    
+                case this.contract && price > lastPrice && this.action == 'SELL':
+                    {
+                        this.sendOrder('LMT', price, 'SELL')
+                        break
+                    }
+                default:
+                    {
+                        this.$Notice.error({
+                            title: 'Order Failed!',
+                            desc: "请先选择合约和开单方向",
+                            duration: 5
+                        })
+                    }
+               
+            }
+
+            this.action = ""
+        },
+        onTimeRangeChange(param) {
+            // console.log(param.from)
+            // console.log(param.to)
+            // this.$ibws.once('bars_', )
+            // this.$ibws.send({'action': 'get_klines', 'contract': this.contract, 'from': param.from, 'to': param.to})
+            setTimeout(function(){
+                console.log(param.from)
+                console.log(param.to)
+            }, 10000)
         },
         sendOrder(orderType, price, action) {
             // if no action , notice error
@@ -271,8 +300,9 @@ export default {
             console.log({'action': 'place_order', 'contract': this.contract, 'order': order})
             this.$ibws.send({'action': 'place_order', 'contract': this.contract, 'order': order})
         },
-        init() {
+        initAddition() {
             this.trades.forEach(t => this.handleTrade(t))
+
         } 
     },
     destroyed: () => {

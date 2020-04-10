@@ -13,6 +13,7 @@ import contextlib
 import json
 import talib
 import numpy as np
+import datetime as dt
 import logging
 
 util.logToConsole()
@@ -149,7 +150,7 @@ class IBWS:
         self.SUB_USER.add(ws)
         await ws.send(json.dumps({
             't': 'bars',
-            'data': [{'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[-120:]]}))
+            'data': [{'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[:]]}))
 
         if self.send_bar not in bars.updateEvent:
             bars.updateEvent += self.send_bar
@@ -157,6 +158,27 @@ class IBWS:
     async def unsub_klines(self, ws):
         if ws in self.SUB_USER:
             self.SUB_USER.remove(ws)
+
+    async def get_klines(contract, _from, _to, ws):
+        _to = dt.datetime.fromtimestamp(_to) - dt.timedelta(hours=8)
+        _from = dt.datetime.fromtimestamp(_from) - dt.timedelta(hours=8)
+
+        d = _to - _from
+
+        if d < dt.timedelta(days=1):
+            durationStr = f'{d.seconds} S'
+        else:
+            durationStr = f'{d.days} D'
+
+        try:
+            bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, _to, durationStr, '1 min', 'TRADES', useRTH=False, keepUpToDate=False), 10)
+        except asyncio.TimeoutError:
+            await ws.send(json.dumps({'error': '获取K线超时：请确认数据连接是否中断'}))
+            return
+
+        await ws.send(json.dumps({
+            't': 'bars_',
+            'data': [{'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[:]]}))
  
     def send_bar(self, bars, hasNewBar):
         d = bars[-1]
@@ -280,6 +302,12 @@ class IBWS:
                     return self.sub_klines(contract, ws)
             elif msg['action'] == 'unsub_klines':
                 return self.unsub_klines(ws)
+            elif msg['action'] == 'get_klines':
+                contract = msg.get('contract')
+                _from = msg.get('from')
+                _to = msg.get('to')
+                if contract and _from and _to:
+                    return self.get_klines(contract, _from, _to, ws)
 
         
 
