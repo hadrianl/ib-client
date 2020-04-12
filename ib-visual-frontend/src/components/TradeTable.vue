@@ -1,8 +1,9 @@
 <template>
     <v-data-table
+    :height="height"
     :headers="headers"
     :items="trades"
-    :items-per-page="5"
+    hide-default-footer
     class="elevation-1"
     >
         <template v-slot: item.handle="{ item }">
@@ -55,7 +56,6 @@ export default {
                 {
                     text: 'permId',
                     value: 'permId',
-                    width: 120,
                     sortable: true,
                     sort: (a, b) => a-b
                 },
@@ -105,7 +105,7 @@ export default {
                             case 2:
                                 return ['Submitted', 'PreSubmitted'].indexOf(status) != -1
                             case 3:
-                                return row.order.orderId > 0
+                                return item.order.orderId > 0
                         }
                     },
                 },

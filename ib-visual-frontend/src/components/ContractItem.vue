@@ -1,8 +1,10 @@
 <template>
-    <div>
+    <!-- <div> -->
         <v-autocomplete
+        :value="contract"
         :items="contractsList"
         :search-input.sync="search"
+        :success="contract"
         @input="selectContract"
         @clear="clearContract"
         color="white"
@@ -14,25 +16,15 @@
         prepend-icon="mdi-ios-search"
         chips
         small-chips
+        dense
         outlined
         clearable
-        return-object
-      ></v-autocomplete>
+        return-object>
+            <template v-slot:prepend>
+                <v-icon>mdi-place</v-icon>
+            </template>
+        </v-autocomplete>
 
-    <!-- <AutoComplete clearable	
-    icon="ios-search"
-    v-model="condName" 
-    :data="contractsList" 
-    @on-search="querySearch" 
-    @on-select="selectContract"
-    @on-clear="clearContract"
-    placeholder="请输入合约" >
-    <Option v-for="(c, index) in contractsList" :value="c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4)" :key="index">
-        <span>{{c.symbol}}{{c.lastTradeDateOrContractMonth.substr(2, 4)}} conId:{{c.conId}} </span>
-    </Option>
-    </AutoComplete>
-    <Alert v-if="contract" type="success" show-icon>ConId：{{contract.conId}}</Alert> -->
-    </div>
 </template>
 <script>
 import {Contract} from '../plugins/datastructure.js'
@@ -41,12 +33,17 @@ export default {
     data() {
         return {
             condName: "",
+            search: null,
             // contractsList: [],
         }
     },
     computed: {
         contract() {
             return this.$store.state.currentContract
+        },
+        hasContract() {
+            console.log(Boolean(this.$store.state.currentContract))
+            return Boolean(this.$store.state.currentContract)
         },
         contractsList() {
             let cl = []
@@ -66,17 +63,26 @@ export default {
         })
     },
     methods: {
-        selectContract(contract) {
-            this.$store.commit('selectContract', contract)
+        selectContract(value) {
+            console.log(value)
+            let oldCon = this.contract
+            if(value){
+                this.$store.commit('selectContract', value.contract)
+                this.$emit('changeContract', {'old': oldCon, 'new': value.contract})
+            }
+            
 
             // this.$ibws.send({'action': 'sub_klines','contract': contract})
         },
         clearContract() {
             this.$store.commit('clearContract')
         },
+
+
     },
     watch: {
         search(val) {
+            console.log(val)
             var ret = patt.exec(val)
             if (ret) {
                 let flag = true

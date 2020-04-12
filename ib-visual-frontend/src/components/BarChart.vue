@@ -1,15 +1,46 @@
 <template>
-    <div>
-        <div ref="barChart" class="ChartContainer" id="bar-chart"></div>
-        <RadioGroup v-model="action" type="button">
-            <Radio label="BUY">BUY</Radio>
-            <Radio label="SELL">SELL</Radio>
-        </RadioGroup>
-        <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
-        <InputNumber v-model="offset" :min="0" style="width: auto"></InputNumber>
-        <!-- <Button type="info" @click="init">初始化</Button> -->
-    </div>
-    
+    <v-card>
+        <v-responsive :aspect-ratio="16/9">
+            <v-card-text>
+                <div ref="barChart" class="ChartContainer" id="bar-chart"></div>
+            </v-card-text>
+            <v-card-actions>
+                <v-row>
+                    <v-col>
+                        <v-btn-toggle v-model="action" rounded>
+                        <v-btn value="BUY" color="red">BUY</v-btn>
+                        <v-btn value="SELL" color="green">SELL</v-btn>
+                        </v-btn-toggle>
+                    </v-col>
+                    <v-col>
+                        <v-row>
+                            <v-text-field 
+                            v-model="volume" 
+                            label="volume" 
+                            type="number" 
+                            outlined>
+                            </v-text-field>
+                            <v-text-field 
+                            v-model="offset" 
+                            label="offset" 
+                            type="number" 
+                            outlined 
+                            hide-details>
+                                <template v-slot:prepend>
+                                    <v-icon
+                                    :color="action?action=='BUY'?'red':'green':''"
+                                    >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
+                                </template>
+                            </v-text-field>
+                        </v-row> 
+                    </v-col>
+                    <v-spacer />
+                </v-row>
+            
+        </v-card-actions>
+        </v-responsive>
+    </v-card>
+
 </template>
 <script>
 import { createChart, LineStyle} from 'lightweight-charts'
@@ -123,6 +154,32 @@ export default {
         }
         console.log(this.markers)
         console.log(this)
+
+        this.$on('changeContract', function(payload) {
+            let oldCon = payload.old
+            let newCon = payload.new
+            console.log(`newCon:${newCon}`)
+            console.log(`oldCon:${oldCon}`)
+            if (oldCon) {
+                this.$ibws.send({'action': 'unsub_klines', 'contract': oldCon})
+            }
+
+            this.$ibws.once('bars', this.initAddition)
+            this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
+        }
+        )
+    },
+    watchs: {
+        // contract(newCon, oldCon) {
+        //     console.log(`newCon:${newCon}`)
+        //     console.log(`oldCon:${oldCon}`)
+        //     if (oldCon) {
+        //         this.$ibws.send({'action': 'unsub_klines', 'contract': oldCon})
+        //     }
+
+        //     this.$ibws.once('bars', this.initAddition)
+        //     this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
+        // }
     },
     methods: {
         handleTrade(t) {
@@ -308,7 +365,7 @@ export default {
     destroyed: () => {
         // 实例销毁之前调用。在这一步，实例仍然完全可用。
         console.log(this)
-        Vue.$ibws.send({'action': 'unsub_klines'})
+        Vue.$ibws.send({'action': 'unsub_klines', 'contract': this.contract})
         Vue.$ibws.off('bars')
         Vue.$ibws.off('bar')
 	},

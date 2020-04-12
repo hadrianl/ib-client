@@ -1,17 +1,16 @@
 <template>
   <v-app id="inspire">
     <v-navigation-drawer
-      v-model="drawer"
-      app
-      clipped
-    >
+    v-model="drawer"
+    :expand-on-hover="true"
+    app
+    clipped>
       <v-list dense>
         <v-list-item
-          v-for="item in items"
-          :key="item.text"
-          link
-        >
-          <v-list-item-action>
+        v-for="item in items"
+        :key="item.text"
+        link>
+          <v-list-item-action @click="changeContent(item.page)">
             <v-icon>{{ item.icon }}</v-icon>
           </v-list-item-action>
           <v-list-item-content>
@@ -20,176 +19,78 @@
             </v-list-item-title>
           </v-list-item-content>
         </v-list-item>
-        <v-subheader class="mt-4 grey--text text--darken-1">------------</v-subheader>
-        <!-- <v-list>
-          <v-list-item
-            v-for="item in items2"
-            :key="item.text"
-            link
-          >
-            <v-list-item-avatar>
-              <img
-                :src="`https://randomuser.me/api/portraits/men/${item.picture}.jpg`"
-                alt=""
-              >
-            </v-list-item-avatar>
-            <v-list-item-title v-text="item.text" />
-          </v-list-item>
-        </v-list> -->
-        <!-- <v-list-item
-          class="mt-4"
-          link
-        >
-          <v-list-item-action>
-            <v-icon color="grey darken-1">mdi-plus-circle-outline</v-icon>
-          </v-list-item-action>
-          <v-list-item-title class="grey--text text--darken-1">Browse Channels</v-list-item-title>
-        </v-list-item>
-        <v-list-item link>
-          <v-list-item-action>
-            <v-icon color="grey darken-1">mdi-settings</v-icon>
-          </v-list-item-action>
-          <v-list-item-title class="grey--text text--darken-1">Manage Subscriptions</v-list-item-title>
-        </v-list-item> -->
+        <!-- <v-subheader class="mt-4 grey--text text--darken-1">------------</v-subheader> -->
       </v-list>
     </v-navigation-drawer>
-
     <v-app-bar
-      app
-      clipped-left
-      color="red"
-      dense
-    >
+    app
+    clipped-left
+    color="blalck"
+    dense>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-	  <v-text-field
-	  	v-model="hostname"
-	  	placeholder="backend hostname"
-		:disabled=noedit
-		single-line
-	  />
-	  <v-btn color="primary" @click.stop=updateBackendWS>连接</v-btn>
-      <!-- <v-icon
-        class="mx-4"
-        large
-      >
-        mdi-youtube
-      </v-icon> -->
-      <!-- <v-toolbar-title class="mr-12 align-center">
-        <span class="title">Youtube</span>
-      </v-toolbar-title> -->
+      <v-text-field
+      v-model="hostname"
+      placeholder="backend hostname"
+      :disabled=noedit
+      class="mt-5"
+      single-line />
+      <v-btn color="primary" @click.stop=connectBackendWS>连接</v-btn>
       <v-spacer />
-      <v-row
-        align="center"
-        style="max-width: 650px"
-      >
-        <v-text-field
-          :append-icon-cb="() => {}"
-          placeholder="输入contract..."
-          single-line
-          append-icon="mdi-magnify"
-          color="white"
-          hide-details
-        />
-      </v-row>
+      <ContractItem class="mt-5 pa-8"></ContractItem>
     </v-app-bar>
-
     <v-content>
-      <v-container class="fill-height">
-        <!-- <v-row
-          justify="center"
-          align="center"
-        >
-          <v-col class="shrink">
-            <v-tooltip right>
-              <template v-slot:activator="{ on }">
-                <v-btn
-                  :href="source"
-                  icon
-                  large
-                  target="_blank"
-                  v-on="on"
-                >
-                  <v-icon large>mdi-code-tags</v-icon>
-                </v-btn>
-              </template>
-              <span>Source</span>
-            </v-tooltip>
-            <v-tooltip right>
-              <template v-slot:activator="{ on }">
-                <v-btn
-                  icon
-                  large
-                  href="https://codepen.io/johnjleider/pen/aezMOO"
-                  target="_blank"
-                  v-on="on"
-                >
-                  <v-icon large>mdi-codepen</v-icon>
-                </v-btn>
-              </template>
-              <span>Codepen</span>
-            </v-tooltip>
-          </v-col>
-        </v-row> -->
-      </v-container>
+      <div v-if="currentPage==0">
+         <MainChart />
+      </div>
+      <div v-else-if="currentPage==1">
+        <BarChart />
+      </div>
     </v-content>
+    <v-snackbar 
+    v-model="snackbar"
+    left
+    top 
+    :timeout="3000">{{message}}</v-snackbar>
+    <v-footer app>
+      <v-row
+      align="center"
+      justify="center">
+        <v-alert
+        width="100%"
+        dense
+        text
+        class="text-center"
+        :type="isConnect?'success':'error'">
+        {{isConnect?"已连接":"未连接"}}</v-alert>
+      </v-row>
+        
+    </v-footer>
   </v-app>
 
 
-
-
-
-<!-- <div class="layout">
-        <Layout>
-            <Header :style="{position: 'fixed', width: '100%'}">
-                <Menu mode="horizontal" theme="dark" :active-name="activeItem" @on-select="selectItem">
-                    <div class="layout-logo"></div>
-                    <div class="layout-nav">
-                        <MenuItem name="order">
-                            <Icon type="ios-navigate"></Icon>
-                            下单
-                        </MenuItem>
-                        <MenuItem name="kline">
-                            <Icon type="ios-keypad"></Icon>
-                            行情
-                        </MenuItem>
-                        <div>
-                            <Icon type="ios-analytics"></Icon>
-                            <Input v-model="hostname" placeholder="Enter hostname...default: localhost" size="small" style="width: 200px" :disabled="noedit"/>
-							<Button type="success" ghost @click=connectBackendWS>连接</Button>
-                        </div>
-                    </div>
-                </Menu>
-            </Header>
-            <Content :style="{margin: '88px 20px 0', background: '#fff', minHeight: '600px'}">
-				<div v-if="activeItem=='order'">
-					<MainChart />
-				</div>
-                <div v-else-if="activeItem=='kline'">
-					<BarChart />
-				</div>
-            </Content>
-            <Footer class="layout-footer-center">
-				<Alert v-if="$store.state.isConnected" type="success" style="text-align: center">已连接</Alert>
-				<Alert v-else type="error" style="text-align: center">未连接</Alert>
-				<span>2020 &copy; KRData</span>
-			</Footer>
-        </Layout>
-
-  </div> -->
 </template>
 
 <script>
 import MainChart from './views/MainChart.vue'
 import BarChart from './components/BarChart.vue'
+import ContractItem from './components/ContractItem.vue'
 
 export default {
 	name: 'App',
 	components: {
 		MainChart,
-		BarChart,
+    BarChart,
+    ContractItem,
 	},
 	data() {
 		return {
+      snackbar: false,
+      message: "",
+      drawer: null,
+      currentPage: 0,
+      items: [
+        { icon: 'mdi-youtube-subscription', text: '交易', page: 0 },
+        { icon: 'mdi-trending-up', text: '行情' , page: 1}],
 			activeItem: "order",
 			hostname: "localhost",
 			noedit: false,
@@ -197,11 +98,13 @@ export default {
 		}
 	},
 	computed: {
-
+    isConnect() {
+      return this.$store.state.isConnected
+    }
 		},
 	methods: {
-		selectItem(name) {
-			this.activeItem=name
+		changeContent(page) {
+			this.currentPage=page
 		},
 		connectBackendWS(){
 			this.$ibws.setUrl(this.hostname)
@@ -220,7 +123,7 @@ export default {
 		// 在挂载开始之前被调用：相关的 render 函数首次被调用。
 	},
 	mounted: () => {
-
+    
 	},
 	beforeUpdate: () => {
 		// 数据更新时调用，发生在虚拟 DOM 打补丁之前。这里适合在更新之前访问现有的 DOM，比如手动移除已添加的事件监听器。

@@ -1,10 +1,27 @@
 <template>
-    <div class="tabs-style" style="background: #e3e8ee;padding:16px;height: 100%;width: 100%">
+    <v-card>
+        <v-tabs v-model="tab">
+            <v-tab :key="1">触发止损单</v-tab>
+            <v-tab :key="2">均线止损单</v-tab>
+        </v-tabs>
+        <v-tabs-items v-model="tab">
+            <v-tab-item :key="1">
+                <StopLossOrder />
+            </v-tab-item>
+            <v-tab-item :key="2">
+                <MAStopLossOrder />
+            </v-tab-item>
+        </v-tabs-items>
+    </v-card>
+    
+
+
+    <!-- <div class="tabs-style" style="background: #e3e8ee;padding:16px;height: 100%;width: 100%">
         <Tabs type="card" value="name1">
                 <TabPane label="触发止损单" name="name1"><StopLossOrder /></TabPane>
                 <TabPane label="均线止损单" name="name2"><MAStopLossOrder /></TabPane>
             </Tabs>
-    </div>  
+    </div>   -->
 </template>
 <script>
 import StopLossOrder from './OrderTable/StopLossOrder.vue'
@@ -12,6 +29,7 @@ import MAStopLossOrder from './OrderTable/MAStopLossOrder.vue'
 export default {
     data() {
         return {
+            tab: null
             // contractsList: [],
         }
     },

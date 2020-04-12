@@ -1,34 +1,33 @@
 <template>
-    <div id="main-chart" class="split">
-		<!-- <Alert v-if="!isReady" type="error">未连接，请重新刷新页面或检查后端时候已连接</Alert> -->
-		<Split v-model="lr">
-            <div slot="left" class="split-pane no-padding">
-				<Split v-model="tb" mode="vertical">
-					<div slot="top" class="split-pane">
-						<TradeTable :height="430*tb"/>
-					</div>
-					<div slot="bottom" class="split-pane">
-						<PositionTable :height="430*(1-tb)"/>
-					</div>
-				</Split>
-            </div>
-            <div slot="right" class="split-pane">
-				<ContractItem></ContractItem>
-                <PlaceOrderTab name="name1"/>
-            </div>
-        </Split>
-    </div>
+	<v-container>
+		<v-row>
+			<v-col sm=9>
+				<v-row>
+					<TradeTable height="400"/>
+				</v-row>
+				<v-divider :inset="false"></v-divider>
+				<v-row>
+					<PositionTable height="200"/>
+				</v-row>
+			</v-col>
+			<v-divider :inset="false" vertical></v-divider>
+			<v-col>
+				<PlaceOrderTab />	
+			</v-col>
+		</v-row>
+		
+	</v-container>
 </template>
 
 <script>
 import TradeTable from '../components/TradeTable.vue'
 import PlaceOrderTab from '../components/PlaceOrderTab.vue'
 import PositionTable from '../components/PositionTable.vue'
-import ContractItem from '../components/ContractItem.vue'
+// import ContractItem from '../components/ContractItem.vue'
 
 export default {
 	components: {
-		ContractItem,
+		// ContractItem,
 		PositionTable,
 		TradeTable,
 		PlaceOrderTab,
@@ -82,24 +81,5 @@ export default {
 </script>
 
 <style>
-	#main-chart {
-	/* font-family: Avenir, Helvetica, Arial, sans-serif;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-	text-align: center;
-	color: #2c3e50;
-	margin-top: 60px; */
-	}
 
-    .split{
-        /* height: 200px; */
-        border: 1px solid #dcdee2;
-    }
-    .split-pane{
-        padding: 10px;
-    }
-    .split-pane.no-padding{
-        height: 450px;
-        padding: 0;
-    }
 </style>

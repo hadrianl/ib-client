@@ -140,7 +140,6 @@ const store = new Vuex.Store({
     },
     mutations:{
         selectContract(state, contract) {
-            console.log(contract)
             state.currentContract = contract
         },
 

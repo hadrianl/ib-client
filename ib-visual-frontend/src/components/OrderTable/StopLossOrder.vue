@@ -4,34 +4,89 @@
             <v-subheader>参考成本</v-subheader>
             <v-list-item-group>
                 <v-list-item>
-                    <v-btn @click="setOrderBaseOnCost(openCost)">
+                    <v-btn @click="setOrderBaseOnCost(openCost)" dense small>
                         参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
                     </v-btn>
                 </v-list-item>
                 <v-list-item>
-                    <v-btn @click="setOrderBaseOnCost(sessionCost)">
+                    <v-btn @click="setOrderBaseOnCost(sessionCost)" dense small>
                         参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
                     </v-btn>
                 </v-list-item>
                 <v-list-item>
-                    <v-btn @click="setOrderBaseOnCost(totalCost)">
+                    <v-btn @click="setOrderBaseOnCost(totalCost)" dense small>
                         参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
                     </v-btn>
                 </v-list-item>
                 <v-list-item>
-                    <v-text-field v-model="costOffset" label="costOffset" type="number" outlined></v-text-field>
+                    <v-text-field 
+                    v-model="costOffset" 
+                    label="costOffset" 
+                    type="number" 
+                    class="mt-5 pa-0"
+                    outlined 
+                    dense></v-text-field>
                 </v-list-item>      
             </v-list-item-group>        
         </v-list>
-        <v-row>
-            <v-text-field v-model="limitPrice" label="limitPrice" type="number" disabled outlined></v-text-field>
-            <v-text-field v-model="volume" label="volume" type="number" outlined></v-text-field>
-        </v-row>
-        <v-row>
-            <v-text-field v-model="stopPrice" label="stopPrice" type="number" outlined></v-text-field>
-            <v-text-field v-model="offset" label="offset" type="number" outlined></v-text-field>
-        </v-row>
-        <v-text-field v-model="orderRef" label="orderRef" placeholder="Order Ref" clearable></v-text-field>
+        <v-list dense>
+            <v-list-item>
+                <v-text-field v-model="limitPrice" label="limitPrice" type="number" disabled outlined dense></v-text-field>
+                <v-text-field 
+                v-model="volume"
+                prepend-icon="@"
+                label="volume" 
+                type="number" 
+                outlined
+                dense>
+                </v-text-field>
+            </v-list-item>
+            <v-list-item>
+                <v-text-field v-model="stopPrice" label="stopPrice" type="number" outlined dense></v-text-field>
+                <v-text-field 
+                v-model="offset" 
+                label="offset" 
+                type="number" 
+                outlined
+                dense>
+                    <template v-slot:prepend>
+                        <v-icon
+                        :color="action?action=='BUY'?'red':'green':''"
+                        >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
+                    </template>
+                </v-text-field>
+            </v-list-item>
+            <v-list-item>
+                <v-text-field v-model="orderRef" label="orderRef" placeholder="Order Ref" clearable dense></v-text-field>
+            </v-list-item>
+            <v-list-item>
+                <v-btn-toggle
+                v-model="action" 
+                rounded 
+                dense
+                class="mx-auto pm-auto">
+                    <v-btn value="BUY" color="red">BUY</v-btn>
+                    <v-btn value="SELL" color="green">SELL</v-btn>
+                </v-btn-toggle>
+            </v-list-item>
+            <v-list-item>
+                <v-row justify="space-around">
+                    <v-col cols="8">
+                        <v-btn 
+                        block
+                        @click="insertOrder()" 
+                        :color="action?action=='BUY'?'red':'green':''">{{action?action:"NotSet"}}</v-btn>
+                    </v-col>
+                    <v-col cols="4">
+                        <v-btn 
+                        block
+                        @click="reset()" >RESET</v-btn>
+                    </v-col>  
+                </v-row>
+            </v-list-item>
+        </v-list>
+
+        <!-- <v-text-field v-model="orderRef" label="orderRef" placeholder="Order Ref" clearable dense></v-text-field>
         <v-btn-toggle v-model="action" rounded>
             <v-btn value="BUY">BUY</v-btn>
             <v-btn value="SELL">SELL</v-btn>
@@ -39,7 +94,7 @@
         <v-row>
             <v-btn @click="insertOrder()">{{action?action:"NotSet"}}</v-btn>
             <v-btn @click="reset()">RESET</v-btn>
-        </v-row>
+        </v-row> -->
     </v-form>
 
 
@@ -171,7 +226,7 @@ export default {
             // const contract = this.$refs.contract.currentContract
             const contract = this.contract
             if (contract == null) {
-                this.$Notice.error({
+                this.$emit('error', {
                     title: 'Order Failed!',
                     desc: "请先选择合约",
                     duration: 5
@@ -180,7 +235,7 @@ export default {
             }
 
             if (this.action == "") {
-                this.$Notice.error({
+                this.$emit('error', {
                     title: 'Order Failed!',
                     desc: "请先选择方向",
                     duration: 5

@@ -1,41 +1,37 @@
 <template>
-    <Table :height="height" :columns="columns" :data="positions" :row-class-name="rowClassName">
-    </Table>
+    <v-data-table
+    :height="height"
+    :headers="headers"
+    :items="positions"
+    hide-default-footer
+    class="elevation-1">
+    </v-data-table>
+
+    <!-- <Table :height="height" :columns="columns" :data="positions" :row-class-name="rowClassName">
+    </Table> -->
 </template>
 <script>
 // import Vue from 'vue'
 export default {
      data() {
         return {
-            columns : [
-                    {title: 'conId',
-                    width: 100,
-                    fixed: 'left',
-                    sortable: true,
-                    render: (h, params) => {
-                        return h('div', params.row.conId)
-                    }
+            headers : [
+                    {
+                        text: 'conId',
+                        value: 'conId',
+                        sortable: true,
                     },
-                    {title: 'position',
-                    width: 100,
-                    align: 'center',
-                    render: (h, params) => {
-                        return h('div', params.row.position)
-                    }
+                    {
+                        text: 'position',
+                        value: 'posision'
                     },
-                    {title: 'avgCost',
-                    width: 100,
-                    align: 'left',
-                    render: (h, params) => {
-                        return h('div', params.row.avgCost)
-                    }
+                    {
+                        text: 'avgCost',
+                        value: 'avgCost',
                     },
-                    {title: 'account',
-                    width: 120,
-                    align: 'left',
-                    render: (h, params) => {
-                        return h('div', params.row.account)
-                    }
+                    {
+                        text: 'account',
+                        value: 'account',
                     }]
                 }
             },

@@ -9,6 +9,7 @@ import websockets
 import asyncio
 from typing import Set, List, Dict, NamedTuple
 from dataclasses import is_dataclass, fields
+from collections import defaultdict
 import contextlib
 import json
 import talib
@@ -23,13 +24,10 @@ def convert(obj):
     if isinstance(obj, (int, float)) or obj is None:
         return obj
     elif is_dataclass(obj):
-        print(obj)
         return {field.name: convert(getattr(obj, field.name)) for field in fields(obj)}
     elif isinstance(obj, List):
         return [convert(o) for o in obj]
     elif isinstance(obj, tuple):
-        print(obj)
-        Contract
         return {k: convert(v) for k, v in zip(obj._fields, obj)}
     else:
         return str(obj)
@@ -39,7 +37,7 @@ class IBWS:
         self.host = host
         self.port = port
         self.USER: Set[websockets.WebSocketServerProtocol]= set()
-        self.SUB_USER = set()
+        self.SUB_USER: Dict[int, Set] = defaultdict(set)
         self.ib = IB()
         self.bar2ws: Dict[BarDataList, Set] = {}
         self.loop = asyncio.get_event_loop()
@@ -55,12 +53,18 @@ class IBWS:
     async def unregiseter(self, user):
         self.USER.remove(user)
         logger.info(f'Unregister User: {user}')
-        if user in self.SUB_USER:
-            self.SUB_USER.remove(user)
+        for conId in self.SUB_USER:
+            if user in self.SUB_USER[conId]:
+                self.SUB_USER[conId].remove(user)
 
-        if not (self.SUB_USER and self.USER):
+        # TODO: disconnect updateEvent
+        if not self.SUB_USER[conId]:
             for _, bars in self.ib.wrapper.reqId2Subscriber.items():
-                bars.updateEvent -= self.send_bar
+                if isinstance(bars, BarDataList) and bars.contract.conId == conId:
+                    bars.updateEvent -= self.send_bar
+        # if not (self.SUB_USER and self.USER):
+        #     for _, bars in self.ib.wrapper.reqId2Subscriber.items():
+        #         bars.updateEvent -= self.send_bar
         # if not self.USER:
         #     self.ib.disconnect()
 
@@ -147,7 +151,7 @@ class IBWS:
                 return
 
         conId = bars.contract.conId
-        self.SUB_USER.add(ws)
+        self.SUB_USER[conId].add(ws)
         await ws.send(json.dumps({
             't': 'bars',
             'data': [{'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[:]]}))
@@ -155,10 +159,13 @@ class IBWS:
         if self.send_bar not in bars.updateEvent:
             bars.updateEvent += self.send_bar
 
-    async def unsub_klines(self, ws):
-        if ws in self.SUB_USER:
-            self.SUB_USER.remove(ws)
+    async def unsub_klines(self, contract, ws):
+        # TODO
+        conId = contract.conId
+        if ws in self.SUB_USER[conId]:
+            self.SUB_USER[conId].remove(ws)
 
+        
     async def get_klines(contract, _from, _to, ws):
         _to = dt.datetime.fromtimestamp(_to) - dt.timedelta(hours=8)
         _from = dt.datetime.fromtimestamp(_from) - dt.timedelta(hours=8)
@@ -182,8 +189,8 @@ class IBWS:
  
     def send_bar(self, bars, hasNewBar):
         d = bars[-1]
-        
-        for u in self.SUB_USER:
+        conId = bars.contract.conId
+        for u in self.SUB_USER[conId]:
             self.ib.run(u.send(json.dumps({
                 't': 'bar',
                 'data': {'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
@@ -301,7 +308,10 @@ class IBWS:
                     contract = Contract(**contract)
                     return self.sub_klines(contract, ws)
             elif msg['action'] == 'unsub_klines':
-                return self.unsub_klines(ws)
+                contract = msg.get('contract')
+                if contract:
+                    contract = Contract(**contract)
+                    return self.unsub_klines(contract, ws)
             elif msg['action'] == 'get_klines':
                 contract = msg.get('contract')
                 _from = msg.get('from')

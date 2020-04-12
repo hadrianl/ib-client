@@ -1,6 +1,82 @@
 <template>
-    <Form :label-width="60" label-position="left">
-        <!-- <ContractItem ref="contract" :contractsList=contractsList /> -->
+    <v-list dense>
+        <v-list-item>
+            <v-text-field 
+            v-model="volume" 
+            label="volume" 
+            type="number" 
+            dense
+            outlined></v-text-field>
+        </v-list-item>
+        <v-list-item>
+            <v-text-field 
+            v-model="trigger" 
+            label="triggerType" 
+            placeholder="触发类型" 
+            dense
+            outlined></v-text-field>
+            <v-text-field 
+            v-model="offset" 
+            label="offset" 
+            type="number" 
+            dense
+            outlined>
+                <template v-slot:prepend>
+                    <v-icon
+                    :color="action?action=='BUY'?'red':'green':''"
+                    >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
+                </template>
+            </v-text-field>
+        </v-list-item>
+        <v-list-item>
+            <v-btn-toggle 
+            v-model="action" 
+            rounded 
+            class="mx-auto pm-auto">
+                <v-btn value="BUY" color="red">BUY</v-btn>
+                <v-btn value="SELL" color="green">SELL</v-btn>
+            </v-btn-toggle>
+        </v-list-item>
+        <v-list-item>
+            <v-row justify="space-around">
+                <v-col cols="8">
+                    <v-btn 
+                    block
+                    @click="insertOrder()" 
+                    :color="action?action=='BUY'?'red':'green':''">{{action?action:"NotSet"}}</v-btn>
+                </v-col>
+                <v-col cols="4">
+                    <v-btn 
+                    block
+                    @click="reset()" >RESET</v-btn>
+                </v-col>  
+            </v-row>
+        </v-list-item>
+    </v-list>
+        <!-- <v-form>
+        <v-row>
+            <v-text-field v-model="volume" label="volume" type="number" outlined></v-text-field>
+        </v-row>
+        <v-row>
+            <v-text-field v-model="trigger" label="triggerType" placeholder="触发类型" outlined></v-text-field>
+            <v-text-field v-model="offset" label="offset" type="number" outlined></v-text-field>
+        </v-row> -->
+        <!-- <v-btn-toggle v-model="action" rounded>
+            <v-btn value="BUY">BUY</v-btn>
+            <v-btn value="SELL">SELL</v-btn>
+        </v-btn-toggle>
+        <v-row>
+            <v-btn @click="insertOrder()">{{action?action:"NotSet"}}</v-btn>
+            <v-btn @click="reset()">RESET</v-btn>
+        </v-row> -->
+    <!-- </v-form> -->
+
+
+
+
+
+    <!-- <Form :label-width="60" label-position="left"> -->
+        <!-- <ContractItem ref="contract" :contractsList=contractsList />
         <FormItem label="Size">
             <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
         </FormItem>
@@ -19,11 +95,9 @@
                 <Radio label="SELL" style="color:green"></Radio>
             </RadioGroup>
         </FormItem>
-        <!-- <FormItem> -->
             <Button @click="insertOrder()" size="large" :style="actionStyle">{{action?action:"NotSet"}}</Button>
             <Button @click="reset()" style="margin-left: 8px" size="large">RESET</Button>
-        <!-- </FormItem> -->
-	</Form>
+	</Form> -->
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
