@@ -73,16 +73,12 @@ const store = new Vuex.Store({
             const fristState = lastSession[lastSession.length - 1]
             let openCostState = [lastSession[0][0] - fristState[0], lastSession[0][1] - fristState[1]]
             const pos = openCostState[1]
-            console.log(lastSession)
-            console.log(fristState)
-            console.log(openCostState)
             for(let i in lastSession){
                 let currentState = lastSession[i]
                 if (Math.abs(currentState[1])>=Math.abs(pos)){
                     openCostState = [(currentState[0]-fristState[0])/(currentState[1] - fristState[1])*pos, pos]
                 }
             }
-            console.log(openCostState)
             return openCostState
         },
         currentSessionCost: state => {
@@ -102,7 +98,6 @@ const store = new Vuex.Store({
                 arr.push([priceSum, posSum])
             }
 
-            console.log(arr)
             const lastState = arr[arr.length -1]
             let fristState = arr[0]
  
@@ -140,6 +135,7 @@ const store = new Vuex.Store({
     },
     mutations:{
         selectContract(state, contract) {
+            console.log(`selectContract: ${contract}`)
             state.currentContract = contract
         },
 

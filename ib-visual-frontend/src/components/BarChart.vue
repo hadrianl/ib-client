@@ -155,22 +155,10 @@ export default {
         console.log(this.markers)
         console.log(this)
 
-        this.$on('changeContract', function(payload) {
-            let oldCon = payload.old
-            let newCon = payload.new
-            console.log(`newCon:${newCon}`)
-            console.log(`oldCon:${oldCon}`)
-            if (oldCon) {
-                this.$ibws.send({'action': 'unsub_klines', 'contract': oldCon})
-            }
-
-            this.$ibws.once('bars', this.initAddition)
-            this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
-        }
-        )
-    },
-    watchs: {
-        // contract(newCon, oldCon) {
+        // this.$on('changeContract', function(payload) {
+        //     console.log('recv_changeContract')
+        //     let oldCon = payload.old
+        //     let newCon = payload.new
         //     console.log(`newCon:${newCon}`)
         //     console.log(`oldCon:${oldCon}`)
         //     if (oldCon) {
@@ -180,6 +168,19 @@ export default {
         //     this.$ibws.once('bars', this.initAddition)
         //     this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
         // }
+        // )
+    },
+    watch: {
+        contract(newCon, oldCon) {
+            console.log(`newCon:${newCon}`)
+            console.log(`oldCon:${oldCon}`)
+            if (oldCon) {
+                this.$ibws.send({'action': 'unsub_klines', 'contract': oldCon})
+            }
+
+            this.$ibws.once('bars', this.initAddition)
+            this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
+        }
     },
     methods: {
         handleTrade(t) {
@@ -237,7 +238,6 @@ export default {
                 let line = this.orderLines[key]
                 line.applyOptions(line_option)
             }else if(line_option) {
-                console.log(line_option)
                 let line = this.ohlcSeries.createPriceLine(line_option)
                 this.orderLines[key] = line
                 }
@@ -260,7 +260,6 @@ export default {
             this.ohlcSeries.setData(bars)
             this.volSeries.setData(volArr)
             // this.maSeries.setData(maArr)
-            console.log(this.ohlcSeries)
             // this.trades.forEach(t => this.handleTrade(t))
         },
         handleBar(bar) {
@@ -364,7 +363,6 @@ export default {
     },
     destroyed: () => {
         // 实例销毁之前调用。在这一步，实例仍然完全可用。
-        console.log(this)
         Vue.$ibws.send({'action': 'unsub_klines', 'contract': this.contract})
         Vue.$ibws.off('bars')
         Vue.$ibws.off('bar')

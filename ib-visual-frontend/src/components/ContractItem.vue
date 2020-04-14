@@ -4,7 +4,7 @@
         :value="contract"
         :items="contractsList"
         :search-input.sync="search"
-        :success="contract"
+        :success="hasContract"
         @input="selectContract"
         @clear="clearContract"
         color="white"
@@ -42,7 +42,6 @@ export default {
             return this.$store.state.currentContract
         },
         hasContract() {
-            console.log(Boolean(this.$store.state.currentContract))
             return Boolean(this.$store.state.currentContract)
         },
         contractsList() {
@@ -61,14 +60,18 @@ export default {
         this.$ibws.on('contract', function(c) {
             _this.$store.commit('addContract', c)
         })
+        // this.$on('changeContract', function(payload) {
+        //     console.log(payload)
+        // })
     },
     methods: {
         selectContract(value) {
             console.log(value)
-            let oldCon = this.contract
+            // let oldCon = this.contract
             if(value){
                 this.$store.commit('selectContract', value.contract)
-                this.$emit('changeContract', {'old': oldCon, 'new': value.contract})
+                console.log('emit_changeContract')
+                // this.$emit('changeContract', {'old': oldCon, 'new': value.contract})
             }
             
 

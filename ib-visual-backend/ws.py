@@ -53,20 +53,14 @@ class IBWS:
     async def unregiseter(self, user):
         self.USER.remove(user)
         logger.info(f'Unregister User: {user}')
+        # TODO: maybe there is a better solution
         for conId in self.SUB_USER:
             if user in self.SUB_USER[conId]:
-                self.SUB_USER[conId].remove(user)
-
-        # TODO: disconnect updateEvent
-        if not self.SUB_USER[conId]:
-            for _, bars in self.ib.wrapper.reqId2Subscriber.items():
-                if isinstance(bars, BarDataList) and bars.contract.conId == conId:
-                    bars.updateEvent -= self.send_bar
-        # if not (self.SUB_USER and self.USER):
-        #     for _, bars in self.ib.wrapper.reqId2Subscriber.items():
-        #         bars.updateEvent -= self.send_bar
-        # if not self.USER:
-        #     self.ib.disconnect()
+                self.SUB_USER[conId].remove(user)  # remove ws from SUB_USER
+                if not self.SUB_USER[conId]:  # disconnect the send_bar if no ws, for global check cleanup
+                    for _, bars in self.ib.wrapper.reqId2Subscriber.items():
+                        if isinstance(bars, BarDataList) and bars.contract.conId == conId:
+                            bars.updateEvent -= self.send_bar
 
     async def handle_trade_event(self, event_name):
         event = getattr(self.ib, event_name)
@@ -90,7 +84,7 @@ class IBWS:
                 await u.send(json.dumps(msg))
 
     async def handle_exec_event(self):
-        async for trade, fill in self.ib.execDetailsEvent:
+        async for _, fill in self.ib.execDetailsEvent:
             msg = {'t': 'fill', 'data': convert(fill)}
             for u in self.USER:
                 await u.send(json.dumps(msg))
@@ -129,7 +123,7 @@ class IBWS:
         await ws.send(json.dumps(msg))
   
     async def place_order(self, contract, order, ws):
-        trade = self.ib.placeOrder(contract, order)
+        _ = self.ib.placeOrder(contract, order)
 
     async def cancel_order(self, order, ws):
         # order.orderId = int(order.orderId)
@@ -138,8 +132,8 @@ class IBWS:
         self.ib.cancelOrder(order)
 
     async def sub_klines(self, contract, ws):
-        
-        for reqId, bs in self.ib.wrapper.reqId2Subscriber.items():
+        print(f'sub_klines:{contract.conId}')
+        for _, bs in self.ib.wrapper.reqId2Subscriber.items():
             if isinstance(bs, BarDataList) and bs.contract == contract:
                 bars = bs
                 break
@@ -160,16 +154,16 @@ class IBWS:
             bars.updateEvent += self.send_bar
 
     async def unsub_klines(self, contract, ws):
-        # TODO
+        print(f'unsub_klines:{contract.conId}')
         conId = contract.conId
         if ws in self.SUB_USER[conId]:
             self.SUB_USER[conId].remove(ws)
 
         
-    async def get_klines(contract, _from, _to, ws):
+    async def get_klines(self, contract, _from, _to, ws):
         _to = dt.datetime.fromtimestamp(_to) - dt.timedelta(hours=8)
         _from = dt.datetime.fromtimestamp(_from) - dt.timedelta(hours=8)
-
+        conId = contract.conId
         d = _to - _from
 
         if d < dt.timedelta(days=1):
