@@ -1,4 +1,5 @@
 import EventEmitter from "eventemitter3"
+import Vue from 'vue'
 
 
 class IBWebsocket extends EventEmitter {
@@ -56,27 +57,6 @@ class IBWebsocket extends EventEmitter {
         // console.log('message', message)
         const msg = JSON.parse(message.data)
         _this.emit(msg.t, msg.data)
-
-
-        // if ('trade' in data) {
-        //   _this.emit('trade', data['trade'])
-        // }else if ('trades' in data) {
-        //   _this.emit('trades', data['trades'])
-        // }else if ('contract' in data){
-        //   _this.emit('contract', data['contract'])
-        // }else if ('error' in data) {
-        //   _this.emit('error', data['error'])
-        // }else if ('bars' in data){
-        //   _this.emit('bars', data['bars'])
-        // }else if ('bar' in data){
-        //   _this.emit('bar', data['bar'])
-        // }
-
-        // const data = eval('(' + message.data + ')')
-        // _this.emit('message', data)
-      //   setImmediate(function () {
-      //     _this.ws.send('{"aid":"peek_message"}')
-      //   })
       }
 
       this.ws.onclose = function (event) {
@@ -85,6 +65,10 @@ class IBWebsocket extends EventEmitter {
           // 清空 queue
           _this.queue = []
           // 自动重连
+          if (event.code === 1001) {
+            _this.reconnect = false
+          }
+
           if (_this.reconnect) {
             if (_this.reconnectMaxTimes <= _this.reconnectTimes) {
               clearTimeout(_this.reconnectTask)
@@ -134,4 +118,7 @@ class IBWebsocket extends EventEmitter {
 
 }
 
-export default IBWebsocket;
+const ibws = new IBWebsocket('ws://localhost:6789')
+Vue.$ibws = Vue.prototype.$ibws = Vue.$ibws || ibws
+
+export default ibws;

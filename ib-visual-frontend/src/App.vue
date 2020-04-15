@@ -9,48 +9,52 @@
         <v-list-item
         v-for="item in items"
         :key="item.text"
+        :to="item.path"
         link>
-          <v-list-item-action @click="changeContent(item.page)">
+          <v-list-item-action>
             <v-icon>{{ item.icon }}</v-icon>
-          </v-list-item-action>
-          <v-list-item-content>
-            <v-list-item-title>
+            <v-list-item-action-text>
               {{ item.text }}
-            </v-list-item-title>
-          </v-list-item-content>
+            </v-list-item-action-text>
+          </v-list-item-action>
         </v-list-item>
-        <!-- <v-subheader class="mt-4 grey--text text--darken-1">------------</v-subheader> -->
       </v-list>
     </v-navigation-drawer>
     <v-app-bar
     app
     clipped-left
-    color="blalck"
-    dense>
+    color="blue">
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
       <v-text-field
       v-model="hostname"
       placeholder="backend hostname"
       :disabled=noedit
-      class="mt-5"
+      class="mt-8 pa-8"
+      solo
       single-line />
-      <v-btn color="primary" @click.stop=connectBackendWS>连接</v-btn>
+      <v-btn color="success" @click.stop=connectBackendWS>连接</v-btn>
+      <v-btn color="error" @click.stop=stopBackendWS>停止</v-btn>
       <v-spacer />
       <ContractItem class="mt-5 pa-8"></ContractItem>
     </v-app-bar>
     <v-content>
-      <div v-if="currentPage==0">
-         <MainChart />
-      </div>
-      <div v-else-if="currentPage==1">
-        <BarChart />
-      </div>
+        <router-view></router-view>
     </v-content>
     <v-snackbar 
-    v-model="snackbar"
+    v-model="snackbar.isShow"
+    :color="snackbar.color"
     left
-    top 
-    :timeout="3000">{{message}}</v-snackbar>
+    bottom 
+    :multi-line="true"
+    :timeout="snackbar.timeout">
+      {{snackbar.title}}<br/>
+      {{snackbar.content}}
+      <v-btn
+      color="indigo"
+      text
+      @click="snackbar.isShow = false">Close</v-btn>
+    
+    </v-snackbar>
     <v-footer app>
       <v-row
       align="center"
@@ -71,32 +75,72 @@
 </template>
 
 <script>
-import MainChart from './views/MainChart.vue'
-import BarChart from './components/BarChart.vue'
 import ContractItem from './components/ContractItem.vue'
 
 export default {
 	name: 'App',
 	components: {
-		MainChart,
-    BarChart,
     ContractItem,
-	},
+  },
 	data() {
 		return {
-      snackbar: false,
-      message: "",
+      snackbar: {
+        isShow: false,
+        color: "",
+        title: "",
+        content: "",
+        timeout: 3000
+      },
       drawer: null,
       currentPage: 0,
       items: [
-        { icon: 'mdi-youtube-subscription', text: '交易', page: 0 },
-        { icon: 'mdi-trending-up', text: '行情' , page: 1}],
+        { icon: 'mdi-youtube-subscription', text: '交易', path: '/main' },
+        { icon: 'mdi-trending-up', text: '行情' , path: '/bar'}],
 			activeItem: "order",
 			hostname: "localhost",
 			noedit: false,
 			contentHeight: document.body.clientHeight - 400
 		}
-	},
+  },
+  mounted() {
+      var _this = this
+      this.$ibws.on('error', function(e) {
+          _this.notice({
+            color: 'error',
+            title: 'Error',
+            content: e,
+          })
+      }
+      )
+
+      this.$ibws.on('open', function() {
+          _this.notice({
+            color: 'success',
+            title: 'Connection',
+            content: 'Connect Opened!',
+          })
+      })
+
+      this.$ibws.on('close', function() {
+          _this.notice({
+            color: 'warning',
+            title: 'Connection',
+            content: 'Connect Closed!',
+          })
+      })
+
+      this.$ibws.on('death', function() {
+          _this.notice({
+            color: 'error',
+            title: 'Connection',
+            content: 'Connect Failed',
+            timeout: 0
+          })
+      })
+
+    // global event bus 
+    this.$bus.$on('notice', this.notice)
+  },
 	computed: {
     isConnect() {
       return this.$store.state.isConnected
@@ -110,8 +154,24 @@ export default {
 			this.$ibws.setUrl(this.hostname)
 			this.$ibws.init(false)
 			this.noedit = true
-
-		}
+    },
+    stopBackendWS() {
+      if(this.$ibws.isReady()){
+        this.$ibws.send({'action': 'disconnect_ib'})
+      }else{
+        this.$bus.$emit('notice', {
+        color: 'error',
+        title: 'Stop IB Failed!',
+        content: "未连接，无法停止IB后台",
+        timeout: 3000})
+      }
+      
+    },
+    notice(payload) {
+      payload.isShow = true
+      payload.timeout = 'timeout' in payload?payload.timeout:3000
+      Object.assign(this.snackbar, payload)
+    }
 	},
 	beforeCreate: () => {
 		// 在实例初始化之后，数据观测 (data observer) 和 event/watcher 事件配置之前被调用。
@@ -121,9 +181,6 @@ export default {
 	},
 	beforeMount: () => {
 		// 在挂载开始之前被调用：相关的 render 函数首次被调用。
-	},
-	mounted: () => {
-    
 	},
 	beforeUpdate: () => {
 		// 数据更新时调用，发生在虚拟 DOM 打补丁之前。这里适合在更新之前访问现有的 DOM，比如手动移除已添加的事件监听器。

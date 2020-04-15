@@ -126,9 +126,6 @@ class IBWS:
         _ = self.ib.placeOrder(contract, order)
 
     async def cancel_order(self, order, ws):
-        # order.orderId = int(order.orderId)
-        # order.permId = int(order.permId)
-        # order.clientId = int(order.clientId)
         self.ib.cancelOrder(order)
 
     async def sub_klines(self, contract, ws):
@@ -158,8 +155,7 @@ class IBWS:
         conId = contract.conId
         if ws in self.SUB_USER[conId]:
             self.SUB_USER[conId].remove(ws)
-
-        
+   
     async def get_klines(self, contract, _from, _to, ws):
         _to = dt.datetime.fromtimestamp(_to) - dt.timedelta(hours=8)
         _from = dt.datetime.fromtimestamp(_from) - dt.timedelta(hours=8)
@@ -209,6 +205,10 @@ class IBWS:
                 except asyncio.TimeoutError:
                     await ws.send(json.dumps({'t': 'error', 'data': '无法下均线止损单：无法获取合约数据'}))
                     return
+
+            if len(bars) < period:
+                await ws.send(json.dumps({'t': 'error', 'data': '无法下均线止损单：合约数据长度不足'}))
+                return
             
             # init ma order
             ma = talib.MA(np.array([b.close for b in bars[-period-1:]]), period)
@@ -245,6 +245,13 @@ class IBWS:
             trade.filledEvent += lambda t: bars.updateEvent.disconnect(dynamic_order)
             trade.cancelledEvent += lambda t: bars.updateEvent.disconnect(dynamic_order)
 
+    async def disconnect_ib(self, ws):
+        self.ib.disconnect()
+        self.ib.wrapper.reset()
+        self.SUB_USER.clear()
+        user = list(self.USER)
+        for u in user:
+            await u.close(1001)
 
     async def middleware(self, ws, path):
         await self.register(ws)
@@ -256,7 +263,7 @@ class IBWS:
                 if handler:
                     await handler
         except Exception as e:
-            logger.exception('middleware error:')
+            logger.exception(f'middleware error: {e}')
         finally:
             await self.unregiseter(ws)
 
@@ -312,9 +319,10 @@ class IBWS:
                 _to = msg.get('to')
                 if contract and _from and _to:
                     return self.get_klines(contract, _from, _to, ws)
+            elif msg['action'] == 'disconnect_ib':
+                return self.disconnect_ib(ws)
 
         
-
     async def global_check(self): # check if there is no user and no processing event, if so , disconnect
         while True:
             await asyncio.sleep(120)
@@ -331,10 +339,9 @@ class IBWS:
                 self.ib.disconnect()
                 self.ib.wrapper.reset()
      
-
     def run(self):
-        start_server = websockets.serve(self.middleware, '0.0.0.0', 6789)
-        self.ib.run(start_server)
+        server = websockets.serve(self.middleware, '0.0.0.0', 6789)
+        self.ib.run(server)
         trade_handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
         position_handler = self.handle_position_event()
         exec_handler = self.handle_exec_event()

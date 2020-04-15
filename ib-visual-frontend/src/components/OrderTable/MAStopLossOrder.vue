@@ -24,7 +24,7 @@
                 <template v-slot:prepend>
                     <v-icon
                     :color="action?action=='BUY'?'red':'green':''"
-                    >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
+                    >{{action?action=='BUY'?'mdi-arrow-up-circle':'mdi-arrow-down-circle':''}}</v-icon>
                 </template>
             </v-text-field>
         </v-list-item>
@@ -150,31 +150,49 @@ export default {
             const contract = this.contract
             console.log(contract)
             if (contract == null) {
-                this.$Notice.error({
+                this.$bus.$emit('notice', {
+                    color: 'error',
                     title: 'Order Failed!',
-                    desc: "请先选择合约",
-                    duration: 5
+                    content: "请先选择合约",
+                    timeout: 2000
                 })
+                // this.$Notice.error({
+                //     title: 'Order Failed!',
+                //     desc: "请先选择合约",
+                //     duration: 5
+                // })
                 return
             }
 
             if (this.action == "") {
-                this.$Notice.error({
+                this.$bus.$emit('notice', {
+                    color: 'error',
                     title: 'Order Failed!',
-                    desc: "请先选择方向",
-                    duration: 5
+                    content: "请先选择方向",
+                    timeout: 2000
                 })
+                // this.$Notice.error({
+                //     title: 'Order Failed!',
+                //     desc: "请先选择方向",
+                //     duration: 5
+                // })
                 return
             }
 
             const options = this.getTriggerOptions()
 
             if (!options) {
-                this.$Notice.error({
-                    title: 'order Failed!',
-                    desc: '请填写正确触发类型',
-                    duration: 5
+                this.$bus.$emit('notice', {
+                    color: 'error',
+                    title: 'Order Failed!',
+                    content: "请填写正确触发类型",
+                    timeout: 2000
                 })
+                // this.$Notice.error({
+                //     title: 'order Failed!',
+                //     desc: '请填写正确触发类型',
+                //     duration: 5
+                // })
                 return
             }
 

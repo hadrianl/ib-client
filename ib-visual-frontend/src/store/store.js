@@ -44,81 +44,89 @@ const store = new Vuex.Store({
             }
             return state.tradesList.filter(t => t.contract.conId == state.currentContract.conId)
         },
-        currentOpenCost: state => {
-            if(!state.currentContract){
+        currentOpenCost: (state, getters) => {
+            const fills = getters.currentFillsList
+            if(!state.currentContract || !fills){
                 return [0, 0]
             }
-            const conId = state.currentContract.conId
 
-            const fills = state.fillsList.filter(f => f.contract.conId == conId)
-
-            let arr = []
+            let arr = [[0, 0]]  // set [0, 0] 
             let priceSum = 0
             let posSum = 0
             let sessionBeginIndex = 0
             for(let i in fills){
-                let f = fills[i]
-                let size = f.execution.side == 'BOT'?f.execution.shares:-f.execution.shares
-                priceSum += f.execution.price * size
-                posSum += size
                 if(posSum==0){
                     sessionBeginIndex = i
                 }
-                arr.push([priceSum, posSum])
-            }
-            
-
-            const lastSession = arr.slice(sessionBeginIndex)
-            lastSession.reverse()
-            const fristState = lastSession[lastSession.length - 1]
-            let openCostState = [lastSession[0][0] - fristState[0], lastSession[0][1] - fristState[1]]
-            const pos = openCostState[1]
-            for(let i in lastSession){
-                let currentState = lastSession[i]
-                if (Math.abs(currentState[1])>=Math.abs(pos)){
-                    openCostState = [(currentState[0]-fristState[0])/(currentState[1] - fristState[1])*pos, pos]
-                }
-            }
-            return openCostState
-        },
-        currentSessionCost: state => {
-            if(!state.currentContract){
-                return [0, 0]
-            }
-            const conId = state.currentContract.conId
-
-            const fills = state.fillsList.filter(f => f.contract.conId == conId)
-            let arr = []
-            let priceSum = 0
-            let posSum = 0
-            for(let f of fills){
-                let size = f.execution.side == 'BOT'?f.execution.shares:-f.execution.shares
+                const f = fills[i]
+                const size = f.execution.side == 'BOT'?f.execution.shares:-f.execution.shares
                 priceSum += f.execution.price * size
                 posSum += size
                 arr.push([priceSum, posSum])
             }
-
-            const lastState = arr[arr.length -1]
-            let fristState = arr[0]
- 
-            for(let i = arr.length - 1; i >=0; i--){
-                if(arr[i][1] == 0){
-                    fristState = arr[i]
+            
+            const lastSession = arr.slice(sessionBeginIndex)
+            // lastSession.reverse()
+            const fristState = lastSession[0]
+            const lastState = lastSession[lastSession.length - 1]
+            const lastPos = lastState[1]
+            let openCostState = [lastState[0] - fristState[0], lastState[1] - fristState[1]]
+            // const pos = openCostState[1]
+            for(let i in lastSession){
+                let currentState = lastSession[i]
+                if (Math.abs(currentState[1])>=Math.abs(lastPos)){
+                    let value_diff = currentState[0]-fristState[0]
+                    let pos_diff = currentState[1] - fristState[1]
+                    openCostState = [(pos_diff?value_diff/pos_diff:value_diff)*lastPos, lastPos]
                     break
                 }
             }
 
-            return [lastState[0] - fristState[0], lastState[1] - fristState[1]]
-
+            return openCostState
         },
-        currentTotalCost: state => {
-            if(!state.currentContract){
+        currentSessionCost: (state, getters) => {
+            const fills = getters.currentFillsList
+            if(!state.currentContract || !fills){
                 return [0, 0]
             }
 
-            const conId = state.currentContract.conId
+            let arr = [[0, 0]]
+            let priceSum = 0
+            let posSum = 0
+            let sessionBeginIndex = 0
+            for(let i in fills){
+                if(posSum==0){
+                    sessionBeginIndex = i
+                }
 
-            const fills = state.fillsList.filter(f => f.contract.conId == conId)
+                const f = fills[i]
+                const size = f.execution.side == 'BOT'?f.execution.shares:-f.execution.shares
+                priceSum += f.execution.price * size
+                posSum += size
+                arr.push([priceSum, posSum])
+            }
+
+            const lastSession = arr.slice(sessionBeginIndex)
+            const fristState = lastSession[0]
+            const lastState = lastSession[lastSession.length - 1]
+            // const lastState = arr[arr.length -1]
+            // let fristState = arr[0]
+ 
+            // for(let i = arr.length - 1; i >=0; i--){
+            //     if(arr[i][1] == 0){
+            //         fristState = arr[i]
+            //         break
+            //     }
+            // }
+
+            return [lastState[0] - fristState[0], lastState[1] - fristState[1]]
+
+        },
+        currentTotalCost: (state, getters) => {
+            const fills = getters.currentFillsList
+            if(!state.currentContract || !fills){
+                return [0, 0]
+            }
 
             let arr = []
             let priceSum = 0

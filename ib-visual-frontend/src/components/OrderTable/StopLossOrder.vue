@@ -1,20 +1,25 @@
 <template>
     <v-form>
         <v-list dense>
-            <v-subheader>参考成本</v-subheader>
-            <v-list-item-group>
+            <!-- <v-subheader>参考成本</v-subheader> -->
+            <v-list-group :value="false">
+                <template v-slot:activator>
+                    <v-list-item-content>
+                        <v-list-item-title>参考成本</v-list-item-title>
+                    </v-list-item-content>
+                </template>
                 <v-list-item>
-                    <v-btn @click="setOrderBaseOnCost(openCost)" dense small>
+                    <v-btn @click="setOrderBaseOnCost(openCost)" dense block>
                         参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
                     </v-btn>
                 </v-list-item>
                 <v-list-item>
-                    <v-btn @click="setOrderBaseOnCost(sessionCost)" dense small>
+                    <v-btn @click="setOrderBaseOnCost(sessionCost)" dense block>
                         参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
                     </v-btn>
                 </v-list-item>
                 <v-list-item>
-                    <v-btn @click="setOrderBaseOnCost(totalCost)" dense small>
+                    <v-btn @click="setOrderBaseOnCost(totalCost)" dense  block>
                         参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
                     </v-btn>
                 </v-list-item>
@@ -27,14 +32,14 @@
                     outlined 
                     dense></v-text-field>
                 </v-list-item>      
-            </v-list-item-group>        
+            </v-list-group>        
         </v-list>
         <v-list dense>
             <v-list-item>
                 <v-text-field v-model="limitPrice" label="limitPrice" type="number" disabled outlined dense></v-text-field>
                 <v-text-field 
                 v-model="volume"
-                prepend-icon="@"
+                prepend-icon="mdi-location-enter"
                 label="volume" 
                 type="number" 
                 outlined
@@ -52,7 +57,7 @@
                     <template v-slot:prepend>
                         <v-icon
                         :color="action?action=='BUY'?'red':'green':''"
-                        >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
+                        >{{action?action=='BUY'?'mdi-arrow-up-circle':'mdi-arrow-down-circle':''}}</v-icon>
                     </template>
                 </v-text-field>
             </v-list-item>
@@ -85,73 +90,9 @@
                 </v-row>
             </v-list-item>
         </v-list>
-
-        <!-- <v-text-field v-model="orderRef" label="orderRef" placeholder="Order Ref" clearable dense></v-text-field>
-        <v-btn-toggle v-model="action" rounded>
-            <v-btn value="BUY">BUY</v-btn>
-            <v-btn value="SELL">SELL</v-btn>
-        </v-btn-toggle>
-        <v-row>
-            <v-btn @click="insertOrder()">{{action?action:"NotSet"}}</v-btn>
-            <v-btn @click="reset()">RESET</v-btn>
-        </v-row> -->
     </v-form>
 
 
-
-
-    <!-- <Form :label-width="60" label-position="left">
-        <List border>
-             
-            <ListItem>
-                <Button @click="setOrderBaseOnCost(openCost)">
-                    参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
-                </Button>
-            </ListItem>
-            <ListItem>
-                <Button @click="setOrderBaseOnCost(sessionCost)">
-                    参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
-                </Button>
-            </ListItem>
-            <ListItem>
-                <Button @click="setOrderBaseOnCost(totalCost)">
-                    参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
-                </Button> 
-            </ListItem>
-            <ListItem>
-                <InputNumber v-model="costOffset" :step="priceTick" ></InputNumber> 
-            </ListItem>
-        </List>
-        <FormItem label="Price">
-            <Row>
-                <i-col span="14">
-                    <InputNumber v-model="limitPrice" disabled :max="maxPrice" :min="minPrice" :step="priceTick" style="width: auto"></InputNumber>
-                </i-col>
-                <i-col span="4">@</i-col>
-                <i-col span="6">
-                    <InputNumber v-model="volume" :min="1" style="width: auto"></InputNumber>
-                </i-col>
-            </Row>
-        </FormItem>
-        <FormItem label="Ref">
-            <Input v-model="orderRef" placeholder="order ref" clearable />
-        </FormItem>
-        <FormItem label="StopPrice" inline>
-            <InputNumber v-model="stopPrice" :max="maxPrice" :min="minPrice" :step="priceTick"></InputNumber>
-            <Icon v-if="action == 'BUY'" type="ios-arrow-round-up" color="red" />
-            <Icon v-else-if="action == 'SELL'" type="ios-arrow-round-down" color="green" />
-            <Icon v-else type="ios-help" />
-            <InputNumber v-model="offset"   :max="200" :min="minPrice" :step="priceTick" ></InputNumber>
-        </FormItem>
-        <FormItem label="Action">
-            <RadioGroup v-model="action" type="button" size="large">
-                <Radio label="BUY" style="color:red"></Radio>
-                <Radio label="SELL" style="color:green"></Radio>
-            </RadioGroup>
-        </FormItem>
-            <Button @click="insertOrder()" size="large" :style="actionStyle">{{action?action:"NotSet"}}</Button>
-            <Button @click="reset()" style="margin-left: 8px" size="large">RESET</Button>
-	</Form> -->
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
@@ -226,19 +167,21 @@ export default {
             // const contract = this.$refs.contract.currentContract
             const contract = this.contract
             if (contract == null) {
-                this.$emit('error', {
+                this.$bus.$emit('notice', {
+                    color: 'error',
                     title: 'Order Failed!',
-                    desc: "请先选择合约",
-                    duration: 5
+                    content: "请先选择合约",
+                    timeout: 2000
                 })
                 return
             }
 
             if (this.action == "") {
-                this.$emit('error', {
+                this.$bus.$emit('notice', {
+                    color: 'error',
                     title: 'Order Failed!',
-                    desc: "请先选择方向",
-                    duration: 5
+                    content: "请先选择方向",
+                    timeout: 2000
                 })
                 return
 
@@ -260,17 +203,18 @@ export default {
         setOrderBaseOnCost(cost){
             console.log(cost)
             if(!cost[1]){
-                this.$Notice.error({
+                this.$bus.$emit('notice', {
+                    color: 'error',
                     title: 'Set Order Ref failed!',
-                    desc: "无法参考0持仓设置止损单",
-                    duration: 1
+                    content: "无法参考0持仓设置止损单",
+                    timeout: 4000
                 })
                 return
             }
 
             this.volume = Math.abs(cost[1])
             const avgCost = parseInt(cost[0]/cost[1])
-            this.stopPrice = cost[1]>0? avgCost + this.costOffset:avgCost - this.costOffset
+            this.stopPrice = cost[1]>0? avgCost - this.costOffset:avgCost + this.costOffset
             this.action = cost[1]>0?"SELL":"BUY"
             this.orderRef = `sl-${this.volume}@${avgCost}`
         },

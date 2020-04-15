@@ -1,7 +1,7 @@
 <template>
-	<v-container>
+	<v-container fluid class='mt-1 pt-1'>
 		<v-row>
-			<v-col sm=9>
+			<v-col cols="8">
 				<v-row>
 					<TradeTable height="400"/>
 				</v-row>
@@ -11,11 +11,10 @@
 				</v-row>
 			</v-col>
 			<v-divider :inset="false" vertical></v-divider>
-			<v-col>
+			<v-col cols="3">
 				<PlaceOrderTab />	
 			</v-col>
 		</v-row>
-		
 	</v-container>
 </template>
 

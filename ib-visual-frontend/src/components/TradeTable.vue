@@ -4,47 +4,19 @@
     :headers="headers"
     :items="trades"
     hide-default-footer
-    class="elevation-1"
     >
-        <template v-slot: item.handle="{ item }">
+        <template v-slot:item.handle="{ item }">
             <v-btn 
             v-if="isDone(item.status)"
             @click="cancelOrder(item.order)"
             color="error"
             small
-            ></v-btn>
+            >Cancel</v-btn>
         </template>
     </v-data-table>
-    
-
-    <!-- <Table :height="height" :columns="columns" :data="trades" :row-class-name="rowClassName">
-        <template slot-scope="{ row }" slot="handle">
-            <Button v-if="isDone(row.orderStatus.status)" 
-            type="error" 
-            size="small" 
-            @click="cancelOrder(row.order)">Cancell</Button>
-        </template>
-    </Table> -->
 </template>
 
 <script>
-// import Vue from 'vue'
-
-// function orderKey(orderId, permId, clientId) {
-//     if (orderId <= 0) {
-//         return String(permId)
-//     }else{
-//         return String(clientId) + String(orderId)
-//     }
-// }
-
-// function is_same_key(n_trade, o_trade) {
-//     var nKey = orderKey(n_trade.order.orderId, n_trade.order.permId, n_trade.order.clientId)
-//     var oKey = orderKey(o_trade.order.orderId, o_trade.order.permId, o_trade.order.clientId)
-    
-//     return nKey == oKey
-// }
-
 
 export default {
     data() {
@@ -98,15 +70,19 @@ export default {
                     filterable: true,
                     align: 'center',
                     filter: (value, search, item) => {
-                        let status = item.status
-                        switch(value){
-                            case 1:
-                                return ['Cancelled', 'ApiCancelled'].indexOf(status) == -1
-                            case 2:
-                                return ['Submitted', 'PreSubmitted'].indexOf(status) != -1
-                            case 3:
-                                return item.order.orderId > 0
-                        }
+                        console.log(value)
+                        console.log(search)
+                        console.log(item)
+                        return true
+                        // const status = item.status
+                        // switch(value){
+                        //     case 1:
+                        //         return ['Cancelled', 'ApiCancelled'].indexOf(status) == -1
+                        //     case 2:
+                        //         return ['Submitted', 'PreSubmitted'].indexOf(status) != -1
+                        //     case 3:
+                        //         return item.order.orderId > 0
+                        // }
                     },
                 },
                 {
@@ -114,7 +90,7 @@ export default {
                     value: 'orderRef',
                 },
                 {
-                    text: '',
+                    text: 'handle',
                     value: 'handle',
                     sortable: false,
                 }
@@ -133,7 +109,7 @@ export default {
     computed: {
         trades() {
             let trades = []
-            this.$store.state.tradesList.forEach(v => {
+            this.$store.getters.availableTradesList.forEach(v => {
                 trades.push({
                     permId: v.order.permId,
                     clientId: v.order.clientId,
@@ -149,6 +125,7 @@ export default {
                     order: v.order,
                 })
             })
+            console.log(trades)
             return trades
         }
     },
@@ -165,20 +142,6 @@ export default {
         cancelOrder(order) {
             this.$ibws.send({'action':'cancel_order', 'order': order})
         },
-        // rowClassName(row) {
-        //     switch (row.orderStatus.status){
-        //         case 'Filled':
-        //             return 'table-filled-row'
-        //         case 'Submitted':
-        //             return 'table-submitted-row'
-        //         case 'PreSubmitted':
-        //             return 'table-presubmitted-row'
-        //         case 'Cancelled':
-        //             return 'table-cancelled-row'
-        //         default:
-        //             return ''
-        //     }
-        // }
     }
 }
 </script>

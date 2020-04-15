@@ -1,12 +1,12 @@
 <template>
     <!-- <div> -->
         <v-autocomplete
-        :value="contract"
-        :items="contractsList"
+        :value="currentItem"
+        :items="itemsList"
         :search-input.sync="search"
         :success="hasContract"
-        @input="selectContract"
-        @clear="clearContract"
+        @input="selectItem"
+        @click:clear="clearItem"
         color="white"
         hide-no-data
         item-text= "symbol"
@@ -16,12 +16,15 @@
         prepend-icon="mdi-ios-search"
         chips
         small-chips
+        deletable-chips
         dense
         outlined
         clearable
         return-object>
             <template v-slot:prepend>
-                <v-icon>mdi-place</v-icon>
+                <v-icon
+                :color="hasContract?'success':'error'"
+                >{{hasContract?'mdi-text-box-check-outline':'mdi-text-box-remove-outline'}}</v-icon>
             </template>
         </v-autocomplete>
 
@@ -32,19 +35,25 @@ const patt = /^([A-Z]{3,})(\d{4})$/i
 export default {
     data() {
         return {
-            condName: "",
             search: null,
-            // contractsList: [],
         }
     },
     computed: {
-        contract() {
-            return this.$store.state.currentContract
+        currentItem() {
+            const c = this.$store.state.currentContract
+            if(!c) {
+                return null
+            }
+
+            return  {
+                    'symbol': c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4),
+                    'contract': c,
+                    }
         },
         hasContract() {
             return Boolean(this.$store.state.currentContract)
         },
-        contractsList() {
+        itemsList() {
             let cl = []
             this.$store.state.contractsList.forEach(c => {
                 cl.push({
@@ -60,24 +69,17 @@ export default {
         this.$ibws.on('contract', function(c) {
             _this.$store.commit('addContract', c)
         })
-        // this.$on('changeContract', function(payload) {
-        //     console.log(payload)
-        // })
+
     },
     methods: {
-        selectContract(value) {
-            console.log(value)
-            // let oldCon = this.contract
-            if(value){
-                this.$store.commit('selectContract', value.contract)
-                console.log('emit_changeContract')
-                // this.$emit('changeContract', {'old': oldCon, 'new': value.contract})
+        selectItem(item) {
+            if(item){
+                this.$store.commit('selectContract', item.contract)
             }
-            
 
-            // this.$ibws.send({'action': 'sub_klines','contract': contract})
         },
-        clearContract() {
+        clearItem() {
+            console.log('clearItem')
             this.$store.commit('clearContract')
         },
 
@@ -89,7 +91,7 @@ export default {
             var ret = patt.exec(val)
             if (ret) {
                 let flag = true
-                this.contractsList.forEach(function(c){
+                this.itemsList.forEach(function(c){
                 if (c.symbol === ret[0]){
                     flag = false
                 }

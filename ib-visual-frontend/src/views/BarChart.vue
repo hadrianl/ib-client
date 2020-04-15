@@ -1,45 +1,47 @@
 <template>
-    <v-card>
-        <v-responsive :aspect-ratio="16/9">
-            <v-card-text>
-                <div ref="barChart" class="ChartContainer" id="bar-chart"></div>
-            </v-card-text>
-            <v-card-actions>
-                <v-row>
-                    <v-col>
-                        <v-btn-toggle v-model="action" rounded>
-                        <v-btn value="BUY" color="red">BUY</v-btn>
-                        <v-btn value="SELL" color="green">SELL</v-btn>
-                        </v-btn-toggle>
-                    </v-col>
-                    <v-col>
-                        <v-row>
-                            <v-text-field 
-                            v-model="volume" 
-                            label="volume" 
-                            type="number" 
-                            outlined>
-                            </v-text-field>
-                            <v-text-field 
-                            v-model="offset" 
-                            label="offset" 
-                            type="number" 
-                            outlined 
-                            hide-details>
-                                <template v-slot:prepend>
-                                    <v-icon
-                                    :color="action?action=='BUY'?'red':'green':''"
-                                    >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
-                                </template>
-                            </v-text-field>
-                        </v-row> 
-                    </v-col>
-                    <v-spacer />
-                </v-row>
-            
-        </v-card-actions>
-        </v-responsive>
-    </v-card>
+    <v-container fluid class='mt-1 pt-1'>
+        <v-card ref="barCard">
+            <v-responsive :aspect-ratio="16/9">
+                <v-card-text>
+                    <div ref="barChart" class="ChartContainer" id="bar-chart"></div>
+                </v-card-text>
+                <v-card-actions>
+                    <v-row>
+                        <v-col>
+                            <v-btn-toggle v-model="action" rounded>
+                            <v-btn value="BUY" color="red">BUY</v-btn>
+                            <v-btn value="SELL" color="green">SELL</v-btn>
+                            </v-btn-toggle>
+                        </v-col>
+                        <v-col>
+                            <v-row>
+                                <v-text-field 
+                                v-model="volume" 
+                                label="volume" 
+                                type="number" 
+                                outlined>
+                                </v-text-field>
+                                <v-text-field 
+                                v-model="offset" 
+                                label="offset" 
+                                type="number" 
+                                outlined 
+                                hide-details>
+                                    <template v-slot:prepend>
+                                        <v-icon
+                                        :color="action?action=='BUY'?'red':'green':''"
+                                        >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
+                                    </template>
+                                </v-text-field>
+                            </v-row> 
+                        </v-col>
+                        <v-spacer />
+                    </v-row>
+                </v-card-actions>
+            </v-responsive>
+        </v-card>
+    </v-container>
+    
 
 </template>
 <script>
@@ -50,7 +52,14 @@ import Vue from 'vue'
 export default {
     // const chart = createChart(this.$refs.barChart, {width: 1200, height: 500})
     props: {
-
+        // chartWidth: {
+        //     type: Number,
+        //     default: 1300
+        // },
+        // chartHeight: {
+        //     type: Number,
+        //     default: 500
+        // }
     },
     computed:{
         contract() {
@@ -78,6 +87,8 @@ export default {
     data() {
         return {
             chart: null,
+            chartWidth: 1600,
+            chartHeight: 500,
             ohlcSeries: null,
             volSeries: null,
             maSeries: null,
@@ -89,9 +100,10 @@ export default {
         }
     },
     mounted() {
+        console.log(this.chartWidth)
         const chartOptions = {
-            width: 1300, 
-            height: 500,
+            width: this.chartWidth, 
+            height: this.chartHeight,
             timeScale: {
                 rightOffset: 10,
                 // barSpacing: number;
@@ -180,6 +192,22 @@ export default {
 
             this.$ibws.once('bars', this.initAddition)
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
+        },
+        chartWidth(w) {
+            if (this.chart) {
+                this.chart.applyOptions({
+                    width: w, 
+                    height: this.chartHeight,
+                    })
+            }
+        },
+        chartHeight(h) {
+            if (this.chart) {
+                this.chart.applyOptions({
+                    width: this.chartWidth, 
+                    height: h,
+                    })
+            }
         }
     },
     methods: {
@@ -302,10 +330,11 @@ export default {
                     }
                 default:
                     {
-                        this.$Notice.error({
+                        this.$bus.$emit('notice', {
+                            color: 'error',
                             title: 'Order Failed!',
-                            desc: "请先选择合约和开单方向",
-                            duration: 5
+                            content: "请先选择合约和开单方向",
+                            timeout: 3000
                         })
                     }
                

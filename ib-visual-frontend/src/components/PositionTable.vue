@@ -3,12 +3,9 @@
     :height="height"
     :headers="headers"
     :items="positions"
-    hide-default-footer
-    class="elevation-1">
+    hide-default-footer>
     </v-data-table>
 
-    <!-- <Table :height="height" :columns="columns" :data="positions" :row-class-name="rowClassName">
-    </Table> -->
 </template>
 <script>
 // import Vue from 'vue'
@@ -23,7 +20,7 @@ export default {
                     },
                     {
                         text: 'position',
-                        value: 'posision'
+                        value: 'position'
                     },
                     {
                         text: 'avgCost',
@@ -50,28 +47,7 @@ export default {
 
     },
     mounted() {
-        // var _this = this
-        // this.$ibws.on('positions', function (ps) {
-        //     console.log(ps)
-        //     // _this.positionsArr = ps
-        //     _this.$store.commit('initPositions', ps)
-        // })
-        
-        // this.$ibws.on('position', function (p) {
-        //     console.log(p)
-        //     // for (let i in _this.positionsArr){
-        //     //     if (_this.positionsArr[i].conId === p.conId){
-        //     //         _this.positionsArr.splice(i, 1, p)
-        //     //             return
-        //     //         }
-        //     //     }
-    
-        //     // _this.positionsArr.unshift(p)
-        //     _this.$store.commit('updatePosition', p)
-            
-        // })
 
-        // this.$ibws.send({'action': "get_all_positions"})
     },
     beforeDestroy: () => {
         // 实例销毁之前调用。在这一步，实例仍然完全可用。
