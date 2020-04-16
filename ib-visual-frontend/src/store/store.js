@@ -30,7 +30,7 @@ const store = new Vuex.Store({
     },
     getters: {
         availableTradesList: state => {
-            return state.tradesList.filter(t => ['Cancelled', 'ApiCancelled'].indexOf(t) == -1)
+            return state.tradesList.filter(t => ['Cancelled', 'ApiCancelled'].indexOf(t.orderStatus.status) == -1)
         },
         currentFillsList: state => {
             if(!state.currentContract){

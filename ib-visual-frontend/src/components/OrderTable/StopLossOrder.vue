@@ -27,7 +27,8 @@
                     <v-text-field 
                     v-model="costOffset" 
                     label="costOffset" 
-                    type="number" 
+                    type="number"
+                    :rules="priceRules"
                     class="mt-5 pa-0"
                     outlined 
                     dense></v-text-field>
@@ -36,22 +37,24 @@
         </v-list>
         <v-list dense>
             <v-list-item>
-                <v-text-field v-model="limitPrice" label="limitPrice" type="number" disabled outlined dense></v-text-field>
+                <v-text-field v-model="limitPrice" label="limitPrice" type="number" :rules="priceRules" disabled outlined dense></v-text-field>
                 <v-text-field 
                 v-model="volume"
                 prepend-icon="mdi-location-enter"
                 label="volume" 
-                type="number" 
+                type="number"
+                :rules="priceRules"
                 outlined
                 dense>
                 </v-text-field>
             </v-list-item>
             <v-list-item>
-                <v-text-field v-model="stopPrice" label="stopPrice" type="number" outlined dense></v-text-field>
+                <v-text-field v-model="stopPrice" label="stopPrice" type="number" :rules="priceRules" outlined dense></v-text-field>
                 <v-text-field 
                 v-model="offset" 
                 label="offset" 
-                type="number" 
+                type="number"
+                :rules="priceRules"
                 outlined
                 dense>
                     <template v-slot:prepend>
@@ -80,7 +83,9 @@
                         <v-btn 
                         block
                         @click="insertOrder()" 
-                        :color="action?action=='BUY'?'red':'green':''">{{action?action:"NotSet"}}</v-btn>
+                        :color="action?action=='BUY'?'red':'green':''"
+                        :disabled="!action"
+                        >{{action?action:"NotSet"}}</v-btn>
                     </v-col>
                     <v-col cols="4">
                         <v-btn 
@@ -106,17 +111,19 @@ export default {
     data() {
 			return {
                 split: 0.3,
-                selectedTab: 'accounts', // accounts positions orders trades
                 action: "",
-				volume: 1,
+				volume: "1",
                 priceTick: 1,
-                stopPrice: 0,
-                offset: 0,
+                stopPrice: "0",
+                offset: "0",
 				priceDecs: 0,
                 maxPrice: Infinity,
                 minPrice: 0,
                 orderRef: "",
-                costOffset: 60,
+                costOffset: "60",
+                priceRules: [
+                    // v => /^\\d+$/.test(v)
+                ]
 			};
         },
     mounted() {
@@ -124,11 +131,13 @@ export default {
     },
     computed: {
         limitPrice() {
+            const sp = parseInt(this.stopPrice)
+            const offset = parseInt(this.offset)
             switch (this.action) {
                     case "BUY":
-                        return this.stopPrice + this.offset
+                        return sp + offset
                     case "SELL":
-                        return this.stopPrice - this.offset
+                        return sp - offset
                     default:
                         return 0
                 }
@@ -191,10 +200,10 @@ export default {
             order.outsideRth = true
             order.orderType = 'STP LMT'
             // order.tif = 'GTC'
-            order.lmtPrice = this.limitPrice
-            order.auxPrice = this.stopPrice
+            order.lmtPrice = parseInt(this.limitPrice)
+            order.auxPrice = parseInt(this.stopPrice)
             order.action = this.action
-            order.totalQuantity = this.volume
+            order.totalQuantity = parseInt(this.volume)
             console.log({'action': 'place_order', 'contract': contract, 'order': order})
             this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
 
@@ -214,15 +223,16 @@ export default {
 
             this.volume = Math.abs(cost[1])
             const avgCost = parseInt(cost[0]/cost[1])
-            this.stopPrice = cost[1]>0? avgCost - this.costOffset:avgCost + this.costOffset
+            const costOffset = parseInt(this.costOffset)
+            this.stopPrice = cost[1]>0? avgCost - costOffset:avgCost + costOffset
             this.action = cost[1]>0?"SELL":"BUY"
             this.orderRef = `sl-${this.volume}@${avgCost}`
         },
         reset() {
             // this.$refs.contract.currentContract = null
-            this.volume = 1
-            this.stopPrice = 0
-            this.offset = 0
+            this.volume = "1"
+            this.stopPrice = "0"
+            this.offset = "0"
             this.action = ""
         },
 		}

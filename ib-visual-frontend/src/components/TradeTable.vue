@@ -3,6 +3,7 @@
     :height="height"
     :headers="headers"
     :items="trades"
+    sort-by="permId"
     hide-default-footer
     >
         <template v-slot:item.handle="{ item }">
@@ -29,7 +30,7 @@ export default {
                     text: 'permId',
                     value: 'permId',
                     sortable: true,
-                    sort: (a, b) => a-b
+                    sort: (a, b) => b-a
                 },
                 {
                     text: 'c',

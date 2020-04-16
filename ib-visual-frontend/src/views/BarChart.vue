@@ -373,7 +373,7 @@ export default {
                     
                 case 'STP LMT':
                     {
-                        let offset = action == 'BUY'?this.offset:-this.offset
+                        let offset = parseInt(action == 'BUY'?this.offset:-this.offset)
                         order.lmtPrice = parseInt(price)
                         order.auxPrice = order.lmtPrice + offset
                         break

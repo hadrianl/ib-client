@@ -187,7 +187,8 @@ class IBWS:
 
     async def place_dynamic_order(self, contract, order: Order, options, ws):
         trigger_type = options['type']
-        offset = options['offset']
+        lmtOffset = options['lmtOffset']
+        triggerOffset = options['triggerOffset']
         period = options['period']
         action = order.action
         # contract.includeExpired = False if contract.includeExpired == 'False' else True
@@ -213,14 +214,15 @@ class IBWS:
             # init ma order
             ma = talib.MA(np.array([b.close for b in bars[-period-1:]]), period)
             stopPrice = int(ma[-1])
+            triggerOffset = int(triggerOffset)
             if action == 'BUY':
-                order.auxPrice = stopPrice
-                order.lmtPrice = stopPrice + offset
+                order.auxPrice = stopPrice + triggerOffset
+                order.lmtPrice = order.auxPrice + lmtOffset
             elif action == 'SELL':
-                order.auxPrice = stopPrice
-                order.lmtPrice = stopPrice - offset
+                order.auxPrice = stopPrice + triggerOffset
+                order.lmtPrice = order.auxPrice - lmtOffset
 
-            order.orderRef = f'{trigger_type}{period}'
+            order.orderRef = f'{trigger_type}{period}{"+" if triggerOffset>=0 else ""}{triggerOffset}'
             trade = self.ib.placeOrder(contract, order)
 
             # dynamic_loop
@@ -233,12 +235,12 @@ class IBWS:
                         order = trade.order
                         stopPrice = int(ma[-1])
                         if action == 'BUY':
-                            order.auxPrice = stopPrice
-                            order.lmtPrice = stopPrice + offset
+                            order.auxPrice = stopPrice + triggerOffset
+                            order.lmtPrice = order.auxPrice + lmtOffset
                             self.ib.placeOrder(contract, order)
                         elif action == 'SELL':
-                            order.auxPrice = stopPrice
-                            order.lmtPrice = stopPrice - offset
+                            order.auxPrice = stopPrice + triggerOffset
+                            order.lmtPrice = order.auxPrice - lmtOffset
                             self.ib.placeOrder(contract, order)
 
             bars.updateEvent.connect(dynamic_order)
