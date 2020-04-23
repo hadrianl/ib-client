@@ -1,5 +1,5 @@
 <template>
-    <v-form>
+    <v-form v-model="valid">
         <v-list dense>
             <!-- <v-subheader>参考成本</v-subheader> -->
             <v-list-group :value="false">
@@ -8,27 +8,33 @@
                         <v-list-item-title>参考成本</v-list-item-title>
                     </v-list-item-content>
                 </template>
-                <v-list-item>
-                    <v-btn @click="setOrderBaseOnCost(openCost)" dense block>
+                <v-list-item-group v-model="cost">
+                    <v-list-item :value="openCost">
                         参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
-                    </v-btn>
-                </v-list-item>
-                <v-list-item>
-                    <v-btn @click="setOrderBaseOnCost(sessionCost)" dense block>
+                        <!-- <v-btn @click="setOrderBaseOnCost(openCost)" dense block>
+                            参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
+                        </v-btn> -->
+                    </v-list-item>
+                    <v-list-item :value="sessionCost">
                         参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
-                    </v-btn>
-                </v-list-item>
-                <v-list-item>
-                    <v-btn @click="setOrderBaseOnCost(totalCost)" dense  block>
+                        <!-- <v-btn @click="setOrderBaseOnCost(sessionCost)" dense block>
+                            参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
+                        </v-btn> -->
+                    </v-list-item>
+                    <v-list-item :value="totalCost">
                         参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
-                    </v-btn>
-                </v-list-item>
+                        <!-- <v-btn @click="setOrderBaseOnCost(totalCost)" dense  block>
+                            参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
+                        </v-btn> -->
+                    </v-list-item>
+                </v-list-item-group>
+                
                 <v-list-item>
                     <v-text-field 
                     v-model="costOffset" 
                     label="costOffset" 
                     type="number"
-                    :rules="priceRules"
+                    :rules="offsetRules"
                     class="mt-5 pa-0"
                     outlined 
                     dense></v-text-field>
@@ -54,7 +60,7 @@
                 v-model="offset" 
                 label="offset" 
                 type="number"
-                :rules="priceRules"
+                :rules="offsetRules"
                 outlined
                 dense>
                     <template v-slot:prepend>
@@ -110,24 +116,35 @@ export default {
     },
     data() {
 			return {
-                split: 0.3,
                 action: "",
 				volume: "1",
-                priceTick: 1,
-                stopPrice: "0",
-                offset: "0",
-				priceDecs: 0,
-                maxPrice: Infinity,
-                minPrice: 0,
+                stopPrice: "",
+                offset: "5",
                 orderRef: "",
                 costOffset: "60",
+                cost: null,
                 priceRules: [
-                    // v => /^\\d+$/.test(v)
-                ]
+                    v => v > 0,
+                ],
+                offsetRules: [
+                ],
+                valid: false,
 			};
         },
     mounted() {
 
+    },
+    watch: {
+        cost(val) {
+            if (val) {
+                this.setOrderBaseOnCost(val)
+            }
+        },
+        costOffset() {
+            if (this.cost) {
+                this.setOrderBaseOnCost(this.cost)
+            }
+        }
     },
     computed: {
         limitPrice() {
@@ -141,22 +158,6 @@ export default {
                     default:
                         return 0
                 }
-        },
-        actionStyle() {
-            switch (this.action) {
-            case "BUY":
-                return {
-                    background: 'red'
-                }
-            case "SELL":
-                return {
-                    background: 'green'
-                }
-            default:
-                return {
-                    background: 'white'
-                }
-        }
         },
         contract() {
             return this.$store.state.currentContract
@@ -193,7 +194,16 @@ export default {
                     timeout: 2000
                 })
                 return
+            }
 
+            if (!this.valid) {
+                this.$bus.$emit('notice', {
+                    color: 'error',
+                    title: 'Order Failed!',
+                    content: "请正确填写下单参数",
+                    timeout: 2000
+                })
+                return
             }
 
             var order = new Order()
@@ -204,6 +214,7 @@ export default {
             order.auxPrice = parseInt(this.stopPrice)
             order.action = this.action
             order.totalQuantity = parseInt(this.volume)
+            order.orderRef = this.orderRef
             console.log({'action': 'place_order', 'contract': contract, 'order': order})
             this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
 
@@ -218,6 +229,7 @@ export default {
                     content: "无法参考0持仓设置止损单",
                     timeout: 4000
                 })
+                this.cost = null
                 return
             }
 
@@ -234,6 +246,7 @@ export default {
             this.stopPrice = "0"
             this.offset = "0"
             this.action = ""
+            this.cost = null
         },
 		}
 }

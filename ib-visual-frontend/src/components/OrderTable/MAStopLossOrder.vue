@@ -1,67 +1,71 @@
 <template>
-    <v-list dense>
-        <v-list-item>
-            <v-text-field 
-            v-model="volume" 
-            label="volume" 
-            type="number" 
-            dense
-            outlined></v-text-field>
-            <v-text-field 
-            v-model="lmtOffset" 
-            label="lmtOffset" 
-            type="number" 
-            dense
-            outlined>
-                <template v-slot:prepend>
-                    <v-icon
-                    :color="action?action=='BUY'?'red':'green':''"
-                    >{{action?action=='BUY'?'mdi-arrow-up-circle':'mdi-arrow-down-circle':''}}</v-icon>
-                </template>
-            </v-text-field>
-        </v-list-item>
-        <v-list-item>
-            <v-text-field 
-            v-model="trigger" 
-            label="triggerType" 
-            placeholder="触发类型" 
-            :rules="triggerRules"
-            dense
-            outlined></v-text-field>
-            <v-text-field 
-            v-model="triggerOffset" 
-            label="triggerOffset" 
-            type="number" 
-            dense
-            outlined>
-            </v-text-field>
-        </v-list-item>
-        <v-list-item>
-            <v-btn-toggle 
-            v-model="action" 
-            rounded 
-            class="mx-auto pm-auto">
-                <v-btn value="BUY" color="red">BUY</v-btn>
-                <v-btn value="SELL" color="green">SELL</v-btn>
-            </v-btn-toggle>
-        </v-list-item>
-        <v-list-item>
-            <v-row justify="space-around">
-                <v-col cols="8">
-                    <v-btn 
-                    block
-                    @click="insertOrder()" 
-                    :color="action?action=='BUY'?'red':'green':''"
-                    :disabled="!action">{{action?action:"NotSet"}}</v-btn>
-                </v-col>
-                <v-col cols="4">
-                    <v-btn 
-                    block
-                    @click="reset()" >RESET</v-btn>
-                </v-col>  
-            </v-row>
-        </v-list-item>
-    </v-list>
+    <v-form v-model="valid">
+        <v-list dense>
+            <v-list-item>
+                <v-text-field 
+                v-model="volume" 
+                label="volume" 
+                type="number" 
+                dense
+                outlined></v-text-field>
+                <v-text-field 
+                v-model="lmtOffset" 
+                label="lmtOffset" 
+                type="number"
+                :rules="offsetRules"
+                dense
+                outlined>
+                    <template v-slot:prepend>
+                        <v-icon
+                        :color="action?action=='BUY'?'red':'green':''"
+                        >{{action?action=='BUY'?'mdi-arrow-up-circle':'mdi-arrow-down-circle':''}}</v-icon>
+                    </template>
+                </v-text-field>
+            </v-list-item>
+            <v-list-item>
+                <v-text-field 
+                v-model="trigger" 
+                label="triggerType" 
+                placeholder="触发类型" 
+                :rules="triggerRules"
+                dense
+                outlined></v-text-field>
+                <v-text-field 
+                v-model="triggerOffset" 
+                label="triggerOffset" 
+                type="number" 
+                :rules="offsetRules"
+                dense
+                outlined>
+                </v-text-field>
+            </v-list-item>
+            <v-list-item>
+                <v-btn-toggle 
+                v-model="action" 
+                rounded 
+                class="mx-auto pm-auto">
+                    <v-btn value="BUY" color="red">BUY</v-btn>
+                    <v-btn value="SELL" color="green">SELL</v-btn>
+                </v-btn-toggle>
+            </v-list-item>
+            <v-list-item>
+                <v-row justify="space-around">
+                    <v-col cols="8">
+                        <v-btn 
+                        block
+                        @click="insertOrder()" 
+                        :color="action?action=='BUY'?'red':'green':''"
+                        :disabled="!action">{{action?action:"NotSet"}}</v-btn>
+                    </v-col>
+                    <v-col cols="4">
+                        <v-btn 
+                        block
+                        @click="reset()" >RESET</v-btn>
+                    </v-col>  
+                </v-row>
+            </v-list-item>
+        </v-list>
+    </v-form>
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
@@ -74,15 +78,17 @@ export default {
     },
     data() {
 			return {
-                split: 0.3,
                 action: "",
 				volume: "1",
                 lmtOffset: "0",
                 triggerOffset: "0",
                 trigger: '',
                 triggerRules: [
-
-                ]
+                    v => /ma\d+/i.test(v)
+                ],
+                offsetRules: [
+                ],
+                valid: false,
 			};
         },
     mounted() {
@@ -129,6 +135,16 @@ export default {
                     color: 'error',
                     title: 'Order Failed!',
                     content: "请先选择方向",
+                    timeout: 2000
+                })
+                return
+            }
+
+            if (!this.valid) {
+                this.$bus.$emit('notice', {
+                    color: 'error',
+                    title: 'Order Failed!',
+                    content: "请正确填写下单参数",
                     timeout: 2000
                 })
                 return
