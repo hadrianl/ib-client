@@ -8,6 +8,14 @@
                 <v-card-actions>
                     <v-row>
                         <v-col>
+                            <v-btn-toggle v-model="barSize" rounded>
+                            <v-btn value="1 min">1 min</v-btn>
+                            <v-btn value="5 mins">5 mins</v-btn>
+                            <v-btn value="10 mins">10 mins</v-btn>
+                            <v-btn value="15 mins">15 mins</v-btn>
+                            </v-btn-toggle>
+                        </v-col>
+                        <v-col>
                             <v-btn-toggle v-model="action" rounded>
                             <v-btn value="BUY" color="red">BUY</v-btn>
                             <v-btn value="SELL" color="green">SELL</v-btn>
@@ -48,9 +56,8 @@
 import { createChart, LineStyle} from 'lightweight-charts'
 import {Order} from '../plugins/datastructure.js'
 import {orderKey} from '../store/store.js'
-import Vue from 'vue'
+
 export default {
-    // const chart = createChart(this.$refs.barChart, {width: 1200, height: 500})
     props: {
         // chartWidth: {
         //     type: Number,
@@ -94,6 +101,7 @@ export default {
             maSeries: null,
             orderLines: {},
             tradeMarkers: {},
+            barSize: "1 min",
             action: "",
             volume: 1,
             offset: 0,
@@ -187,11 +195,16 @@ export default {
             console.log(`newCon:${newCon}`)
             console.log(`oldCon:${oldCon}`)
             if (oldCon) {
-                this.$ibws.send({'action': 'unsub_klines', 'contract': oldCon})
+                this.$ibws.send({'action': 'unsub_klines','contract': oldCon, 'barSize': this.barSize})
             }
 
             this.$ibws.once('bars', this.initAddition)
-            this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
+            this.$ibws.send({'action': 'sub_klines', 'contract': this.contract, 'barSize': this.barSize})
+        },
+        barSize(newSize, oldSize) {
+            this.$ibws.send({'action': 'unsub_klines','contract': this.contract, 'barSize': oldSize})
+            this.$ibws.once('bars', this.initAddition)
+            this.$ibws.send({'action': 'sub_klines', 'contract': this.contract, 'barSize': newSize})
         },
         chartWidth(w) {
             if (this.chart) {
@@ -390,11 +403,12 @@ export default {
 
         } 
     },
-    destroyed: () => {
-        // 实例销毁之前调用。在这一步，实例仍然完全可用。
-        Vue.$ibws.send({'action': 'unsub_klines', 'contract': this.contract})
-        Vue.$ibws.off('bars')
-        Vue.$ibws.off('bar')
+    beforeDestroy() {
+        if (this.contract) {
+            this.$ibws.send({'action': 'unsub_klines', 'contract': this.contract, 'barSize': this.barSize})
+        }  
+        this.$ibws.off('bars')
+        this.$ibws.off('bar')
 	},
 
 

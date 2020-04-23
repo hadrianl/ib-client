@@ -133,7 +133,7 @@ export default {
     mounted() {
 
     },
-    beforeDestroy: () => {
+    beforeDestroy() {
 
 	},
     methods: {

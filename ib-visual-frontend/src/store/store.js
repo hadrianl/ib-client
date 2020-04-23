@@ -46,7 +46,7 @@ const store = new Vuex.Store({
         },
         currentOpenCost: (state, getters) => {
             const fills = getters.currentFillsList
-            if(!state.currentContract || !fills){
+            if(!state.currentContract || fills.length == 0){
                 return [0, 0]
             }
 
@@ -86,7 +86,7 @@ const store = new Vuex.Store({
         },
         currentSessionCost: (state, getters) => {
             const fills = getters.currentFillsList
-            if(!state.currentContract || !fills){
+            if(!state.currentContract || fills.length == 0){
                 return [0, 0]
             }
 
@@ -124,7 +124,7 @@ const store = new Vuex.Store({
         },
         currentTotalCost: (state, getters) => {
             const fills = getters.currentFillsList
-            if(!state.currentContract || !fills){
+            if(!state.currentContract || fills.length == 0){
                 return [0, 0]
             }
 

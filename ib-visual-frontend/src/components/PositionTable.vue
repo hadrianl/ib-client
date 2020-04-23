@@ -49,7 +49,7 @@ export default {
     mounted() {
 
     },
-    beforeDestroy: () => {
+    beforeDestroy() {
         // 实例销毁之前调用。在这一步，实例仍然完全可用。
         // Vue.$ibws.off('positions')
         // Vue.$ibws.off('position')

@@ -37,7 +37,7 @@ class IBWS:
         self.host = host
         self.port = port
         self.USER: Set[websockets.WebSocketServerProtocol]= set()
-        self.SUB_USER: Dict[int, Set] = defaultdict(set)
+        self.SUB_USER: Dict[Set, Set] = defaultdict(set)
         self.ib = IB()
         self.bar2ws: Dict[BarDataList, Set] = {}
         self.loop = asyncio.get_event_loop()
@@ -54,13 +54,13 @@ class IBWS:
         self.USER.remove(user)
         logger.info(f'Unregister User: {user}')
         # TODO: maybe there is a better solution
-        for conId in self.SUB_USER:
-            if user in self.SUB_USER[conId]:
-                self.SUB_USER[conId].remove(user)  # remove ws from SUB_USER
-                if not self.SUB_USER[conId]:  # disconnect the send_bar if no ws, for global check cleanup
-                    for _, bars in self.ib.wrapper.reqId2Subscriber.items():
-                        if isinstance(bars, BarDataList) and bars.contract.conId == conId:
-                            bars.updateEvent -= self.send_bar
+        for conId, barSize in self.SUB_USER:
+            if user in self.SUB_USER[(conId, barSize)]:
+                self.SUB_USER[(conId, barSize)].remove(user)  # remove ws from SUB_USER
+                if not self.SUB_USER[(conId, barSize)]:  # disconnect the send_bar if no ws, for global check cleanup
+                    for _, bs in self.ib.wrapper.reqId2Subscriber.items():
+                        if isinstance(bs, BarDataList) and bs.contract.conId == conId and bs.barSizeSetting == barSize:
+                            bs.updateEvent -= self.send_bar
 
     async def handle_trade_event(self, event_name):
         event = getattr(self.ib, event_name)
@@ -128,21 +128,21 @@ class IBWS:
     async def cancel_order(self, order, ws):
         self.ib.cancelOrder(order)
 
-    async def sub_klines(self, contract, ws):
+    async def sub_klines(self, contract, barSize, ws):
         print(f'sub_klines:{contract.conId}')
         for _, bs in self.ib.wrapper.reqId2Subscriber.items():
-            if isinstance(bs, BarDataList) and bs.contract == contract:
+            if isinstance(bs, BarDataList) and bs.contract == contract and bs.barSizeSetting == barSize:
                 bars = bs
                 break
         else:
             try:
-                bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', '1 min', 'TRADES', useRTH=False, keepUpToDate=True), 10)
+                bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', barSize, 'TRADES', useRTH=False, keepUpToDate=True), 10)
             except asyncio.TimeoutError:
                 await ws.send(json.dumps({'error': '订阅K线超时：请确认数据连接是否中断'}))
                 return
 
         conId = bars.contract.conId
-        self.SUB_USER[conId].add(ws)
+        self.SUB_USER[(conId, barSize)].add(ws)
         await ws.send(json.dumps({
             't': 'bars',
             'data': [{'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[:]]}))
@@ -150,11 +150,11 @@ class IBWS:
         if self.send_bar not in bars.updateEvent:
             bars.updateEvent += self.send_bar
 
-    async def unsub_klines(self, contract, ws):
+    async def unsub_klines(self, contract, barSize, ws):
         print(f'unsub_klines:{contract.conId}')
         conId = contract.conId
-        if ws in self.SUB_USER[conId]:
-            self.SUB_USER[conId].remove(ws)
+        if ws in self.SUB_USER.get((conId, barSize), ()):
+            self.SUB_USER[(conId, barSize)].remove(ws)
    
     async def get_klines(self, contract, _from, _to, ws):
         _to = dt.datetime.fromtimestamp(_to) - dt.timedelta(hours=8)
@@ -180,13 +180,15 @@ class IBWS:
     def send_bar(self, bars, hasNewBar):
         d = bars[-1]
         conId = bars.contract.conId
-        for u in self.SUB_USER[conId]:
+        barSize = bars.barSizeSetting
+        for u in self.SUB_USER[(conId, barSize)]:
             self.ib.run(u.send(json.dumps({
                 't': 'bar',
                 'data': {'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
 
     async def place_dynamic_order(self, contract, order: Order, options, ws):
         trigger_type = options['type']
+        barSize = options.get('barSize', '1 min')
         lmtOffset = options['lmtOffset']
         triggerOffset = options['triggerOffset']
         period = options['period']
@@ -197,12 +199,12 @@ class IBWS:
         if trigger_type == 'MA':
             
             for reqId, bs in self.ib.wrapper.reqId2Subscriber.items():
-                if isinstance(bs, BarDataList) and bs.contract == contract:
+                if isinstance(bs, BarDataList) and bs.contract == contract and bs.barSizeSetting == barSize :
                     bars = bs
                     break
             else:
                 try:       
-                    bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', '1 min', 'TRADES', useRTH=False, keepUpToDate=True), 10)
+                    bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', barSize, 'TRADES', useRTH=False, keepUpToDate=True), 10)
                 except asyncio.TimeoutError:
                     await ws.send(json.dumps({'t': 'error', 'data': '无法下均线止损单：无法获取合约数据'}))
                     return
@@ -307,14 +309,16 @@ class IBWS:
                     return self.place_dynamic_order(contract, order, options, ws)
             elif msg['action'] == 'sub_klines':
                 contract = msg.get('contract')
+                barSize = msg.get('barSize', '1 min')
                 if contract:
                     contract = Contract(**contract)
-                    return self.sub_klines(contract, ws)
+                    return self.sub_klines(contract, barSize, ws)
             elif msg['action'] == 'unsub_klines':
                 contract = msg.get('contract')
+                barSize = msg.get('barSize', '1 min')
                 if contract:
                     contract = Contract(**contract)
-                    return self.unsub_klines(contract, ws)
+                    return self.unsub_klines(contract, barSize, ws)
             elif msg['action'] == 'get_klines':
                 contract = msg.get('contract')
                 _from = msg.get('from')
