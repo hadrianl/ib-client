@@ -8,7 +8,7 @@
                 <v-card-actions>
                     <v-row>
                         <v-col>
-                            <v-btn-toggle v-model="barSize" rounded>
+                            <v-btn-toggle v-model="barSize" rounded mandatory>
                             <v-btn value="1 min">1 min</v-btn>
                             <v-btn value="5 mins">5 mins</v-btn>
                             <v-btn value="10 mins">10 mins</v-btn>

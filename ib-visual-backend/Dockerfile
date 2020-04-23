@@ -14,7 +14,7 @@ RUN apk add --no-cache wget build-base && \
     tar -zxvf ta-lib-0.4.0-src.tar.gz && cd ta-lib/ && ./configure --prefix=/usr && \ 
     make && make install && \ 
     cd .. && rm -rf ta-lib-0.4.0-src.tar.gz ta-lib/ && \
-    pip install --no-cache-dir TA-Lib numpy && \
+    pip install --no-cache-dir TA-Lib numpy -i https://pypi.douban.com/simple && \
     apk del wget build-base
     
 COPY . .
