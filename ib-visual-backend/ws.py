@@ -353,8 +353,4 @@ class IBWS:
         trade_handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
         position_handler = self.handle_position_event()
         exec_handler = self.handle_exec_event()
-        sig_kill = getattr(signal, 'SIGKILL', None)
-        if sig_kill:
-            signal.signal(sig_kill, signal.SIG_DFL)
-
         self.ib.run(*trade_handlers, position_handler, exec_handler, self.global_check())
