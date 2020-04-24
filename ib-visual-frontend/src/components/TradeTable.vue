@@ -5,6 +5,7 @@
     :items="trades"
     sort-by="permId"
     hide-default-footer
+    class="elevation-1"
     >
         <template v-slot:item.handle="{ item }">
             <v-btn 
@@ -66,6 +67,10 @@ export default {
                     value: 'auxPrice',
                 },
                 {
+                    text: 'orderType',
+                    value: 'orderType',
+                },
+                {
                     text: 'status',
                     value: 'status',
                     filterable: true,
@@ -117,10 +122,11 @@ export default {
                     orderId: v.order.orderId,
                     symbol: v.contract.symbol + v.contract.lastTradeDateOrContractMonth.substr(2, 4),
                     action: v.order.action,
-                    filledQty: v.order.filledQuantity,
+                    filledQty: v.order.filledQuantity == Number.MAX_VALUE?0:v.order.filledQuantity,
                     totalQty: v.order.totalQuantity,
                     lmtPrice: v.order.lmtPrice,
                     auxPrice: v.order.auxPrice,
+                    orderType: v.order.orderType,
                     status: v.orderStatus.status,
                     orderRef: v.order.orderRef,
                     order: v.order,
@@ -141,7 +147,7 @@ export default {
             return ['Cancelled', 'ApiCancelled', 'Filled'].indexOf(status) == -1
         },
         cancelOrder(order) {
-            this.$ibws.send({'action':'cancel_order', 'order': order})
+            this.$ibws.send({'action': 'cancel_order', 'order': order})
         },
     }
 }

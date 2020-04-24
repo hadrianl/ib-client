@@ -3,7 +3,8 @@
     :height="height"
     :headers="headers"
     :items="positions"
-    hide-default-footer>
+    hide-default-footer
+    class="elevation-1">
     </v-data-table>
 
 </template>

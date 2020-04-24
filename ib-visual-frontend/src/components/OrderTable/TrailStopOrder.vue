@@ -1,18 +1,37 @@
 <template>
-    <v-form>
+    <v-form v-model="valid">
         <v-list dense>
-            <!-- <v-list-item>
-                <v-text-field v-model="limitPrice" label="limitPrice" type="number" :rules="priceRules" disabled outlined dense></v-text-field>
-                <v-text-field 
-                v-model="volume"
-                prepend-icon="mdi-location-enter"
-                label="volume" 
-                type="number"
-                :rules="priceRules"
-                outlined
-                dense>
-                </v-text-field>
-            </v-list-item> -->
+            <v-list-group :value="false">
+                <template v-slot:activator>
+                    <v-list-item-content>
+                        <v-list-item-title>参考成本</v-list-item-title>
+                    </v-list-item-content>
+                </template>
+                <v-list-item-group v-model="cost">
+                    <v-list-item :value="openCost">
+                        参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
+                    </v-list-item>
+                    <v-list-item :value="sessionCost">
+                        参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
+                    </v-list-item>
+                    <v-list-item :value="totalCost">
+                        参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
+                    </v-list-item>
+                </v-list-item-group>
+                
+                <v-list-item>
+                    <v-text-field 
+                    v-model="costOffset" 
+                    label="costOffset" 
+                    type="number"
+                    :rules="offsetRules"
+                    class="mt-5 pa-0"
+                    outlined 
+                    dense></v-text-field>
+                </v-list-item>      
+            </v-list-group> 
+        </v-list>
+        <v-list dense>
             <v-list-item>
                 <v-text-field v-model="trailStopPrice" label="trailStopPrice" type="number" :rules="priceRules" outlined dense></v-text-field>
                 <v-text-field 
@@ -37,7 +56,7 @@
                 v-model="lmtPriceOffset" 
                 label="lmtPriceOffset" 
                 type="number"
-                :rules="priceRules"
+                :rules="offsetRules"
                 outlined
                 dense>
                     <template v-slot:prepend>
@@ -96,33 +115,47 @@ export default {
                 action: "",
 				volume: "1",
                 priceTick: 1,
+                costOffset: "60",
+                cost: null,
                 trailStopPrice: "0",
                 trailAmount: "0",
                 lmtPriceOffset: "0",
                 orderRef: "",
                 priceRules: [
-                    // v => /^\\d+$/.test(v)
-                ]
+                    v => v > 0,
+                ],
+                offsetRules: [
+                ],
+                valid: false,
 			};
         },
     mounted() {
 
     },
-    computed: {
-        limitPrice() {
-            const sp = parseInt(this.stopPrice)
-            const offset = parseInt(this.offset)
-            switch (this.action) {
-                    case "BUY":
-                        return sp + offset
-                    case "SELL":
-                        return sp - offset
-                    default:
-                        return 0
-                }
+    watch: {
+        cost(val) {
+            if (val) {
+                this.setOrderBaseOnCost(val)
+            }
         },
+        costOffset() {
+            if (this.cost) {
+                this.setOrderBaseOnCost(this.cost)
+            }
+        }
+    },
+    computed: {
         contract() {
             return this.$store.state.currentContract
+        },
+        openCost() {
+            return this.$store.getters.currentOpenCost
+        },
+        sessionCost() {
+            return this.$store.getters.currentSessionCost
+        },
+        totalCost() {
+            return this.$store.getters.currentTotalCost
         },
     },
     methods: {
@@ -159,11 +192,33 @@ export default {
             order.auxPrice = parseInt(this.trailAmount)
             order.action = this.action
             order.totalQuantity = parseInt(this.volume)
+            order.triggerMethod = 4
             order.orderRef = this.orderRef
             console.log({'action': 'place_order', 'contract': contract, 'order': order})
             this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
 
 
+        },
+        setOrderBaseOnCost(cost){
+            console.log(cost)
+            if(!cost[1]){
+                this.$bus.$emit('notice', {
+                    color: 'error',
+                    title: 'Set Order Ref failed!',
+                    content: "无法参考0持仓设置止损单",
+                    timeout: 4000
+                })
+                this.cost = null
+                return
+            }
+
+            this.volume = Math.abs(cost[1])
+            const avgCost = parseInt(cost[0]/cost[1])
+            const costOffset = parseInt(this.costOffset)
+            this.trailStopPrice = cost[1]>0? avgCost - costOffset:avgCost + costOffset
+            this.trailAmount = this.costOffset
+            this.action = cost[1]>0?"SELL":"BUY"
+            this.orderRef = `trailsl-${this.volume}@${avgCost}`
         },
         reset() {
             this.volume = "1"
@@ -171,6 +226,7 @@ export default {
             this.lmtPriceOffset = "0"
             this.trailAmount = "0"
             this.action = ""
+            this.costOffset = "60"
         },
 		}
 }

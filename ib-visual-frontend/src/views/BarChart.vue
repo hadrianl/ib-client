@@ -3,7 +3,7 @@
         <v-card ref="barCard">
             <v-responsive :aspect-ratio="16/9">
                 <v-card-text>
-                    <div ref="barChart" class="ChartContainer" id="bar-chart"></div>
+                    <div v-resize="onResize" ref="barChart" class="ChartContainer" id="bar-chart"></div>
                 </v-card-text>
                 <v-card-actions>
                     <v-row>
@@ -59,14 +59,7 @@ import {orderKey} from '../store/store.js'
 
 export default {
     props: {
-        // chartWidth: {
-        //     type: Number,
-        //     default: 1300
-        // },
-        // chartHeight: {
-        //     type: Number,
-        //     default: 500
-        // }
+
     },
     computed:{
         contract() {
@@ -94,8 +87,6 @@ export default {
     data() {
         return {
             chart: null,
-            chartWidth: 1600,
-            chartHeight: 500,
             ohlcSeries: null,
             volSeries: null,
             maSeries: null,
@@ -108,10 +99,9 @@ export default {
         }
     },
     mounted() {
-        console.log(this.chartWidth)
         const chartOptions = {
-            width: this.chartWidth, 
-            height: this.chartHeight,
+            width: this.$refs.barChart.clientWidth, 
+            height: window.innerHeight * 0.7,
             timeScale: {
                 rightOffset: 10,
                 // barSpacing: number;
@@ -172,28 +162,9 @@ export default {
         if (this.contract){
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
         }
-        console.log(this.markers)
-        console.log(this)
-
-        // this.$on('changeContract', function(payload) {
-        //     console.log('recv_changeContract')
-        //     let oldCon = payload.old
-        //     let newCon = payload.new
-        //     console.log(`newCon:${newCon}`)
-        //     console.log(`oldCon:${oldCon}`)
-        //     if (oldCon) {
-        //         this.$ibws.send({'action': 'unsub_klines', 'contract': oldCon})
-        //     }
-
-        //     this.$ibws.once('bars', this.initAddition)
-        //     this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
-        // }
-        // )
     },
     watch: {
         contract(newCon, oldCon) {
-            console.log(`newCon:${newCon}`)
-            console.log(`oldCon:${oldCon}`)
             if (oldCon) {
                 this.$ibws.send({'action': 'unsub_klines','contract': oldCon, 'barSize': this.barSize})
             }
@@ -206,22 +177,6 @@ export default {
             this.$ibws.once('bars', this.initAddition)
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract, 'barSize': newSize})
         },
-        chartWidth(w) {
-            if (this.chart) {
-                this.chart.applyOptions({
-                    width: w, 
-                    height: this.chartHeight,
-                    })
-            }
-        },
-        chartHeight(h) {
-            if (this.chart) {
-                this.chart.applyOptions({
-                    width: this.chartWidth, 
-                    height: h,
-                    })
-            }
-        }
     },
     methods: {
         handleTrade(t) {
@@ -356,10 +311,6 @@ export default {
             this.action = ""
         },
         onTimeRangeChange(param) {
-            // console.log(param.from)
-            // console.log(param.to)
-            // this.$ibws.once('bars_', )
-            // this.$ibws.send({'action': 'get_klines', 'contract': this.contract, 'from': param.from, 'to': param.to})
             setTimeout(function(){
                 console.log(param.from)
                 console.log(param.to)
@@ -400,8 +351,15 @@ export default {
         },
         initAddition() {
             this.trades.forEach(t => this.handleTrade(t))
-
-        } 
+        },
+        onResize() {
+            if (this.chart) {
+                this.chart.applyOptions({
+                    width: this.$refs.barChart.clientWidth, 
+                    height: this.$refs.barChart.clientHeight,
+                    })
+            }
+        }
     },
     beforeDestroy() {
         if (this.contract) {

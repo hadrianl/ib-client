@@ -1,6 +1,6 @@
 <template>
-	<v-container fluid class='mt-1 pt-1'>
-		<v-row>
+	<v-container class='mt-1 pt-1'>
+		<v-row align="stretch" justify="space-between" no-gutters>
 			<v-col cols="8">
 				<v-row>
 					<TradeTable height="400"/>
