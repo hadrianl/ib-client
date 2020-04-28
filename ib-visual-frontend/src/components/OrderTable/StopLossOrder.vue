@@ -132,7 +132,7 @@ export default {
 			};
         },
     mounted() {
-
+        this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
     },
     watch: {
         cost(val) {
@@ -172,6 +172,9 @@ export default {
             return this.$store.getters.currentTotalCost
         },
     },
+    beforeDestroy() {
+        this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
+	},
     methods: {
         insertOrder() {
             // const contract = this.$refs.contract.currentContract
@@ -239,6 +242,21 @@ export default {
             this.stopPrice = cost[1]>0? avgCost - costOffset:avgCost + costOffset
             this.action = cost[1]>0?"SELL":"BUY"
             this.orderRef = `sl-${this.volume}@${avgCost}`
+        },
+        setOrderBaseOnAttachPrice(price) {
+            if (this.action == "") {
+                this.$bus.$emit('notice', {
+                    color: 'error',
+                    title: 'Order Failed!',
+                    content: "请先选择方向",
+                    timeout: 2000
+                })
+                return
+            }
+
+            const costOffset = parseInt(this.costOffset)
+            this.stopPrice = this.action == 'BUY'? price + costOffset: price - costOffset
+
         },
         reset() {
             // this.$refs.contract.currentContract = null

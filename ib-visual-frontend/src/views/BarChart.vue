@@ -3,7 +3,10 @@
         <v-card ref="barCard">
             <v-responsive :aspect-ratio="16/9">
                 <v-card-text>
-                    <div v-resize="onResize" ref="barChart" class="ChartContainer" id="bar-chart"></div>
+                    <div v-resize="onResize" ref="barChart" class="ChartContainer" id="bar-chart">
+                        <Legend :legend_bar="legend_bar" :legend_ma="legend_ma"></Legend>
+                    </div>
+                    
                 </v-card-text>
                 <v-card-actions>
                     <v-row>
@@ -20,6 +23,9 @@
                             <v-btn value="BUY" color="red">BUY</v-btn>
                             <v-btn value="SELL" color="green">SELL</v-btn>
                             </v-btn-toggle>
+                        </v-col>
+                        <v-col>
+                            <v-switch v-model="isTrail" label="Trail"></v-switch>
                         </v-col>
                         <v-col>
                             <v-row>
@@ -56,8 +62,12 @@
 import { createChart, LineStyle} from 'lightweight-charts'
 import {Order} from '../plugins/datastructure.js'
 import {orderKey} from '../store/store.js'
+import Legend from '../components/charts/Legend.vue'
 
 export default {
+    components: {
+        Legend,
+    },
     props: {
 
     },
@@ -89,13 +99,16 @@ export default {
             chart: null,
             ohlcSeries: null,
             volSeries: null,
-            maSeries: null,
+            maSeries: {5: null, 10: null, 30: null, 60: null},
             orderLines: {},
             tradeMarkers: {},
             barSize: "1 min",
             action: "",
             volume: 1,
             offset: 0,
+            isTrail: false,
+            legend_bar: {time: NaN, open: NaN, high: NaN, low: NaN, close: NaN, volume: NaN},
+            legend_ma: {5: NaN, 10: NaN, 30: NaN, 60: NaN}
         }
     },
     mounted() {
@@ -119,6 +132,15 @@ export default {
         this.ohlcSeries = this.chart.addCandlestickSeries()
         this.volSeries = this.chart.addHistogramSeries({base: 0, overlay: true})
         // this.maSeries = this.chart.addLineSeries()
+        let colors = {5: '#DC143C', 10: '#FFFF00', 30: '#C0FF3E', 60: '#97FFFF'}
+        for(let key in this.maSeries){
+            this.maSeries[key] = this.chart.addLineSeries({
+                priceLineVisible: false, 
+                lastValueVisible: false, 
+                lineWidth: 1, 
+                color: colors[key],
+                })
+        }
         this.chart.applyOptions({
             crosshair: {
                 mode: 0
@@ -149,6 +171,7 @@ export default {
 
         // var _this = this
         this.chart.subscribeClick(this.onChartClick)
+        this.chart.subscribeCrosshairMove(this.onCrosshairMove)
         // this.chart.subscribeVisibleTimeRangeChange(this.onTimeRangeChange)
 
         this.$ibws.on('trade', this.handleTrade)
@@ -227,7 +250,18 @@ export default {
                     }
                     break
                 }
-                
+            case 'TRAIL LIMIT':
+                {
+                    let isPreSubmitted = t.orderStatus.status == 'PreSubmitted'
+                    line_option = {
+                        price: isPreSubmitted?t.order.trailStopPrice:t.order.lmtPrice,
+                        color: t.order.action == 'BUY'?'red':'green',
+                        lineWidth: 2,
+                        lineStyle: isPreSubmitted?LineStyle.Dashed:LineStyle.Dotted,
+                        axisLabelVisible: true,
+                    }
+                    break
+                }
                 }
 
             if (this.orderLines[key]){
@@ -240,11 +274,20 @@ export default {
         },
         handleBars(bars) {
             let volArr = []
-            // let maArr = []
-            bars.forEach((element, index) => {
+            let maArr = {5: [], 10: [], 30: [], 60: []}
+            bars.forEach((element, index, arr) => {
                 let t = new Date(element.time).getTime() / 1000 + 28800
                 bars[index].time = t
                 volArr.push({'time': t, 'value': element.volume})
+                for(let key in maArr) {
+                    if(index < key){
+                        maArr[key].push({'time': t, 'value': '-'})
+                    }else{
+                        let sum = 0
+                        arr.slice(index - key, index).forEach(b => sum += b.close)
+                        maArr[key].push({'time': t, 'value':sum / key})
+                    }
+                }
                 // if(index < 5){
                 //     maArr.push({'time': t, 'value': '-'})
                 // }else{
@@ -255,6 +298,9 @@ export default {
             })
             this.ohlcSeries.setData(bars)
             this.volSeries.setData(volArr)
+            for(let key in this.maSeries) {
+                this.maSeries[key].setData(maArr[key])
+            }
             // this.maSeries.setData(maArr)
             // this.trades.forEach(t => this.handleTrade(t))
         },
@@ -263,37 +309,65 @@ export default {
             bar.time = t
             this.ohlcSeries.update(bar)
             this.volSeries.update({'time': t, 'value': bar.volume})
-            // let sum = 0
-            // let size = this.ohlcSeries.series().data().size()
-            // for(let i = 5;i > 0; i--){
-            //     console.log(this.ohlcSeries.series().dataAt(size - i))
-            //     sum += this.ohlcSeries.series().dataAt(size - i).close
-            // }
-            // this.maSeries.update({'time': t, 'value': sum / 5})
+            for(let key in this.maSeries) {
+                let sum = 0
+                let size = this.ohlcSeries.series().data().size()
+                for(let i = key;i > 0; i--){
+                    console.log(this.ohlcSeries.series().dataAt(size - i))
+                    sum += this.ohlcSeries.series().dataAt(size - i).close
+                }
+                this.maSeries[key].update({'time': t, 'value': sum / key})
+            }
         },
         onChartClick(param) {
             const price = this.ohlcSeries.coordinateToPrice(param.point.y)
             const lastPrice = this.ohlcSeries.series().bars().last().value[3]
             switch(true) {
                 case this.contract && price > lastPrice && this.action == 'BUY':
-                    {
-                        this.sendOrder('STP LMT', price, 'BUY')
+                    {   
+                        if(this.isTrail) {
+                            this.sendOrder('TRAIL LIMIT', price, 'BUY', lastPrice)
+                        }else{
+                            this.sendOrder('STP LMT', price, 'BUY')
+                        }
                         break
                     }    
                 case this.contract && price < lastPrice && this.action == 'BUY':
                     {
-                        this.sendOrder('LMT', price, 'BUY')
+                        if(this.isTrail) {
+                            this.$bus.$emit('notice', {
+                                color: 'error',
+                                title: 'Order Failed!',
+                                content: "不能开即刻触发的移动止损单",
+                                timeout: 3000
+                                })
+                        }else {
+                            this.sendOrder('LMT', price, 'BUY')
+                        }
                         break
                     }
                 case this.contract && price < lastPrice && this.action == 'SELL':
                     {
-                        this.sendOrder('STP LMT', price, 'SELL')
+                        if(this.isTrail) {
+                            this.sendOrder('TRAIL LIMIT', price, 'SELL', lastPrice)
+                        }else {
+                            this.sendOrder('STP LMT', price, 'SELL')
+                        }
                         break
                     }
                     
                 case this.contract && price > lastPrice && this.action == 'SELL':
                     {
-                        this.sendOrder('LMT', price, 'SELL')
+                        if(this.isTrail) {
+                            this.$bus.$emit('notice', {
+                                color: 'error',
+                                title: 'Order Failed!',
+                                content: "不能开即刻触发的移动止损单",
+                                timeout: 3000
+                                })
+                        }else {
+                            this.sendOrder('LMT', price, 'SELL')
+                        }
                         break
                     }
                 default:
@@ -310,13 +384,33 @@ export default {
 
             this.action = ""
         },
+        onCrosshairMove(param) {
+            if (
+                param === undefined ||
+                param.time === undefined ||
+                param.point.x < 0 ||
+                param.point.x > this.$refs.barChart.clientWidth ||
+                param.point.y < 0 ||
+                param.point.y > this.$refs.barChart.clientHeight
+            ) {
+                this.legend_bar = {time: NaN, open: NaN, high: NaN, low: NaN, close: NaN, volume: NaN}
+                this.legend_ma = {5: NaN, 10: NaN, 30: NaN, 60: NaN}
+            }else{
+                this.legend_bar.time = param.time
+                Object.assign(this.legend_bar, param.seriesPrices.get(this.ohlcSeries))
+                this.legend_bar.volume = param.seriesPrices.get(this.volSeries)
+                for(let key in this.legend_ma) {
+                    this.legend_ma[key] = param.seriesPrices.get(this.maSeries[key])
+                }
+            }
+        },
         onTimeRangeChange(param) {
             setTimeout(function(){
                 console.log(param.from)
                 console.log(param.to)
             }, 10000)
         },
-        sendOrder(orderType, price, action) {
+        sendOrder(orderType, price, action, lastPrice) {
             // if no action , notice error
             if(!(this.contract && action)) {
                 return
@@ -340,6 +434,14 @@ export default {
                         let offset = parseInt(action == 'BUY'?this.offset:-this.offset)
                         order.lmtPrice = parseInt(price)
                         order.auxPrice = order.lmtPrice + offset
+                        break
+                    }
+                case 'TRAIL LIMIT':
+                    {
+                        order.trailStopPrice = parseInt(price)
+                        order.auxPrice = Math.round(Math.abs(lastPrice - price))
+                        order.triggerMethod = 4
+                        order.lmtPriceOffset = parseInt(this.offset)
                         break
                     }
                 default:
@@ -372,3 +474,11 @@ export default {
 
 }
 </script>
+<style lang="scss">
+    #bar-chart {
+    position: relative;
+    &:hover .legend {
+        opacity: 1;
+    }
+    }
+</style>

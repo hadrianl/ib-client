@@ -12,6 +12,7 @@
 			</v-col>
 			<v-divider :inset="false" vertical></v-divider>
 			<v-col cols="3">
+				<OrderBook />
 				<PlaceOrderTab />	
 			</v-col>
 		</v-row>
@@ -22,6 +23,7 @@
 import TradeTable from '../components/TradeTable.vue'
 import PlaceOrderTab from '../components/PlaceOrderTab.vue'
 import PositionTable from '../components/PositionTable.vue'
+import OrderBook from '../components/OrderBook.vue'
 // import ContractItem from '../components/ContractItem.vue'
 
 export default {
@@ -30,6 +32,7 @@ export default {
 		PositionTable,
 		TradeTable,
 		PlaceOrderTab,
+		OrderBook,
 		// BarChart,
 		},
 	computed: {

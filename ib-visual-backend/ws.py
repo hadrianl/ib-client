@@ -39,7 +39,8 @@ class IBWS:
         self.host = host
         self.port = port
         self.USER: Set[websockets.WebSocketServerProtocol]= set()
-        self.SUB_USER: Dict[Set, Set] = defaultdict(set)
+        self.BAR2USER: Dict[Set, Set] = defaultdict(set)
+        self.TICK2USER: Dict[int, Set] = defaultdict(set)
         self.ib = IB()
         self.bar2ws: Dict[BarDataList, Set] = {}
         self.loop = asyncio.get_event_loop()
@@ -56,13 +57,33 @@ class IBWS:
         self.USER.remove(user)
         logger.info(f'Unregister User: {user}')
         # TODO: maybe there is a better solution
-        for conId, barSize in self.SUB_USER:
-            if user in self.SUB_USER[(conId, barSize)]:
-                self.SUB_USER[(conId, barSize)].remove(user)  # remove ws from SUB_USER
-                if not self.SUB_USER[(conId, barSize)]:  # disconnect the send_bar if no ws, for global check cleanup
-                    for _, bs in self.ib.wrapper.reqId2Subscriber.items():
-                        if isinstance(bs, BarDataList) and bs.contract.conId == conId and bs.barSizeSetting == barSize:
-                            bs.updateEvent -= self.send_bar
+        for conId, barSize in self.BAR2USER:
+            print(conId)
+            if user in self.BAR2USER[(conId, barSize)]:
+                self.BAR2USER[(conId, barSize)].remove(user)  # remove ws from BAR2USER
+                print(self.BAR2USER[(conId, barSize)])
+                print(bool(not self.BAR2USER[(conId, barSize)]))
+
+            if not self.BAR2USER[(conId, barSize)]:  # disconnect the send_bar if no ws, for global check cleanup
+                print('empty bar')
+                for _, bs in self.ib.wrapper.reqId2Subscriber.items():
+                    if isinstance(bs, BarDataList) and bs.contract.conId == conId and bs.barSizeSetting == barSize:
+                        print("-= send_bar")
+                        bs.updateEvent -= self.send_bar
+
+        for conId in self.TICK2USER:
+            print(conId)
+            if user in self.TICK2USER[conId]:
+                self.TICK2USER[conId].remove(user)
+                print(self.TICK2USER[conId])
+                print(bool(not self.TICK2USER[conId]))
+                
+            if not self.TICK2USER[conId]:
+                print('empty tick')
+                for _, t in self.ib.wrapper.reqId2Ticker.items():
+                    if t.contract.conId == conId:
+                        print("-= send_ticker")
+                        t.updateEvent -= self.send_ticker
 
     async def handle_trade_event(self, event_name):
         event = getattr(self.ib, event_name)
@@ -144,7 +165,7 @@ class IBWS:
                 return
 
         conId = bars.contract.conId
-        self.SUB_USER[(conId, barSize)].add(ws)
+        self.BAR2USER[(conId, barSize)].add(ws)
         await ws.send(json.dumps({
             't': 'bars',
             'data': [{'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[:]]}))
@@ -153,10 +174,34 @@ class IBWS:
             bars.updateEvent += self.send_bar
 
     async def unsub_klines(self, contract, barSize, ws):
-        print(f'unsub_klines:{contract.conId}')
         conId = contract.conId
-        if ws in self.SUB_USER.get((conId, barSize), ()):
-            self.SUB_USER[(conId, barSize)].remove(ws)
+        print(f'unsub_klines:{conId}')
+        if ws in self.BAR2USER[(conId, barSize)]:
+            self.BAR2USER[(conId, barSize)].remove(ws)
+
+    async def sub_ticker(self, contract, ws):
+        print(f'sub_ticker:{contract.conId}')
+        for _, t in self.ib.wrapper.reqId2Ticker.items():
+            if t.contract == contract:
+                ticker: Ticker = t
+                break
+        else:
+            try:
+                ticker = self.ib.reqMktData(contract)
+            except asyncio.TimeoutError:
+                await ws.send(json.dumps({'error': '订阅ticker超时：请确认数据连接是否中断'}))
+                return
+
+        conId = ticker.contract.conId
+        self.TICK2USER[conId].add(ws)
+        if self.send_ticker not in ticker.updateEvent:
+            ticker.updateEvent += self.send_ticker
+    
+    async def unsub_ticker(self, contract, ws):
+        conId = contract.conId
+        print(f'unsub_ticker:{conId}')
+        if ws in self.TICK2USER[conId]:
+            self.TICK2USER[conId].remove(ws)
    
     async def get_klines(self, contract, _from, _to, ws):
         _to = dt.datetime.fromtimestamp(_to) - dt.timedelta(hours=8)
@@ -183,10 +228,19 @@ class IBWS:
         d = bars[-1]
         conId = bars.contract.conId
         barSize = bars.barSizeSetting
-        for u in self.SUB_USER[(conId, barSize)]:
+        for u in self.BAR2USER[(conId, barSize)]:
             self.ib.run(u.send(json.dumps({
                 't': 'bar',
                 'data': {'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
+
+    def send_ticker(self, ticker):
+        conId = ticker.contract.conId
+        for u in self.TICK2USER[conId]:
+            self.ib.run(u.send(json.dumps({
+                't': 'ticker',
+                'data': {'time': str(ticker.time), 'bid': ticker.bid, 'bidSize': ticker.bidSize, 'ask': ticker.ask, 'askSize': ticker.askSize, 'last': ticker.last, 'lastSize': ticker.lastSize, 'conId': conId}
+            })))
+
 
     async def place_dynamic_order(self, contract, order: Order, options, ws):
         trigger_type = options['type']
@@ -254,7 +308,8 @@ class IBWS:
     async def disconnect_ib(self, ws):
         self.ib.disconnect()
         self.ib.wrapper.reset()
-        self.SUB_USER.clear()
+        self.BAR2USER.clear()
+        self.TICK2USER.clear()
         user = list(self.USER)
         for u in user:
             await u.close(1001)
@@ -321,6 +376,16 @@ class IBWS:
                 if contract:
                     contract = Contract(**contract)
                     return self.unsub_klines(contract, barSize, ws)
+            elif msg['action'] == 'sub_ticker':
+                contract = msg.get('contract')
+                if contract:
+                    contract = Contract(**contract)
+                    return self.sub_ticker(contract, ws)
+            elif msg['action'] == 'unsub_ticker':
+                contract = msg.get('contract')
+                if contract:
+                    contract = Contract(**contract)
+                    return self.unsub_ticker(contract, ws)
             elif msg['action'] == 'get_klines':
                 contract = msg.get('contract')
                 _from = msg.get('from')
@@ -335,15 +400,25 @@ class IBWS:
         while True:
             await asyncio.sleep(120)
             print('USER:', self.USER)
-            print('SUB_USER:', self.SUB_USER)
-            print('bars', [{reqId: sub.updateEvent}for reqId, sub in self.ib.wrapper.reqId2Subscriber.items()])
+            print('BAR2USER:', self.BAR2USER)
+            print("TICK2USER:", self.TICK2USER)
+            print('bars', [{reqId: sub.updateEvent} for reqId, sub in self.ib.wrapper.reqId2Subscriber.items()])
             if self.USER:  # check if has user
                 continue
 
-            for reqId, sub in self.ib.wrapper.reqId2Subscriber.items():  # check if has uncompleted event
+            close_flag = True
+
+            for _, sub in self.ib.wrapper.reqId2Subscriber.items():  # check if has uncompleted event
                 if len(sub.updateEvent):
-                    break
-            else:
+                    print(sub.updateEvent)
+                    close_flag = False
+
+            for _, t in self.ib.wrapper.reqId2Ticker.items():
+                if len(t.updateEvent):
+                    print(t.updateEvent)
+                    close_flag = False
+            
+            if close_flag:
                 self.ib.disconnect()
                 self.ib.wrapper.reset()
      

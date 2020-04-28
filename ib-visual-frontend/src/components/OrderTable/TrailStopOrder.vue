@@ -130,7 +130,7 @@ export default {
 			};
         },
     mounted() {
-
+        this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
     },
     watch: {
         cost(val) {
@@ -158,6 +158,9 @@ export default {
             return this.$store.getters.currentTotalCost
         },
     },
+    beforeDestroy() {
+        this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
+	},
     methods: {
         insertOrder() {
             // const contract = this.$refs.contract.currentContract
@@ -219,6 +222,22 @@ export default {
             this.trailAmount = this.costOffset
             this.action = cost[1]>0?"SELL":"BUY"
             this.orderRef = `trailsl-${this.volume}@${avgCost}`
+        },
+        setOrderBaseOnAttachPrice(price) {
+            if (this.action == "") {
+                this.$bus.$emit('notice', {
+                    color: 'error',
+                    title: 'Order Failed!',
+                    content: "请先选择方向",
+                    timeout: 2000
+                })
+                return
+            }
+
+            const costOffset = parseInt(this.costOffset)
+            this.trailStopPrice = this.action == 'BUY'? price + costOffset: price - costOffset
+            this.trailAmount = costOffset
+            this.orderRef = `trailsl-${this.volume}@${price}`
         },
         reset() {
             this.volume = "1"
