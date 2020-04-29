@@ -17,21 +17,19 @@
                     <v-list-item :value="totalCost">
                         参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
                     </v-list-item>
-                </v-list-item-group>
-                
-                <v-list-item>
-                    <v-text-field 
-                    v-model="costOffset" 
-                    label="costOffset" 
-                    type="number"
-                    :rules="offsetRules"
-                    class="mt-5 pa-0"
-                    outlined 
-                    dense></v-text-field>
-                </v-list-item>      
+                </v-list-item-group>    
             </v-list-group> 
         </v-list>
-        <v-list dense>
+        <v-list dense>                
+            <v-list-item>
+                <v-text-field 
+                v-model="costOffset" 
+                label="costOffset" 
+                type="number"
+                :rules="offsetRules"
+                outlined 
+                dense></v-text-field>
+            </v-list-item>  
             <v-list-item>
                 <v-text-field v-model="trailStopPrice" label="trailStopPrice" type="number" :rules="priceRules" outlined dense></v-text-field>
                 <v-text-field 
@@ -112,7 +110,7 @@ export default {
     },
     data() {
 			return {
-                action: "",
+                action: undefined,
 				volume: "1",
                 priceTick: 1,
                 costOffset: "60",
@@ -175,7 +173,7 @@ export default {
                 return
             }
 
-            if (this.action == "") {
+            if (!this.action) {
                 this.$bus.$emit('notice', {
                     color: 'error',
                     title: 'Order Failed!',
@@ -224,7 +222,7 @@ export default {
             this.orderRef = `trailsl-${this.volume}@${avgCost}`
         },
         setOrderBaseOnAttachPrice(price) {
-            if (this.action == "") {
+            if (!this.action) {
                 this.$bus.$emit('notice', {
                     color: 'error',
                     title: 'Order Failed!',
@@ -244,7 +242,7 @@ export default {
             this.trailStopPrice = "0"
             this.lmtPriceOffset = "0"
             this.trailAmount = "0"
-            this.action = ""
+            this.action = undefined
             this.costOffset = "60"
         },
 		}

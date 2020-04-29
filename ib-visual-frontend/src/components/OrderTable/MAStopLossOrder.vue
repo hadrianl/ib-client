@@ -78,7 +78,7 @@ export default {
     },
     data() {
 			return {
-                action: "",
+                action: undefined,
 				volume: "1",
                 lmtOffset: "0",
                 triggerOffset: "0",
@@ -130,7 +130,7 @@ export default {
                 return
             }
 
-            if (this.action == "") {
+            if (!this.action) {
                 this.$bus.$emit('notice', {
                     color: 'error',
                     title: 'Order Failed!',
@@ -179,7 +179,7 @@ export default {
             this.volume = "1"
             this.triggerOffset = "0"
             this.lmtOffset = "0"
-            this.action = ""
+            this.action = undefined
         },
         getTriggerOptions() {
             const ma_trigger_patt = /^(ma)(\d+)$/i

@@ -1,8 +1,10 @@
 <template>
     <v-container>
-        <v-row><v-btn :value="ticker.ask" color='green' block @click="attachPriceClick(ticker.ask)">ASK:{{ ticker.askSize }}@{{ ticker.ask }}</v-btn></v-row>
-        <v-row><v-btn :value="ticker.last" color='blue' block @click="attachPriceClick(ticker.last)">LAST:{{ ticker.lastSize }}@{{ ticker.last }}</v-btn></v-row>
-        <v-row><v-btn :value="ticker.bid" color='red' block @click="attachPriceClick(ticker.bid)">BID:{{ ticker.bidSize }}@{{ ticker.bid }}</v-btn></v-row>
+        <v-row><v-progress-linear v-model="askSizeRate" color='#00FF7F'></v-progress-linear></v-row>
+        <v-row><v-btn :value="ticker.ask" color='#90EE90' block @click="attachPriceClick(ticker.ask)">ASK:{{ ticker.askSize }}@{{ ticker.ask }}</v-btn></v-row>
+        <v-row><v-btn :value="ticker.last" color='#ADD8E6' block @click="attachPriceClick(ticker.last)">LAST:{{ ticker.lastSize }}@{{ ticker.last }}</v-btn></v-row>
+        <v-row><v-btn :value="ticker.bid" color='#F08080' block @click="attachPriceClick(ticker.bid)">BID:{{ ticker.bidSize }}@{{ ticker.bid }}</v-btn></v-row>
+        <v-row><v-progress-linear v-model="bidSizeRate" color='#FF6347'></v-progress-linear></v-row>
     </v-container>
 </template>
 <script>
@@ -25,7 +27,13 @@ export default {
         },
         bidLabel() {
             return `BID: ${this.ticker.bidSize}@${this.ticker.bid}`
-        }
+        },
+        askSizeRate() {
+            return this.ticker.askSize / (this.ticker.askSize + this.ticker.bidSize) * 100
+        },
+        bidSizeRate() {
+            return this.ticker.bidSize / (this.ticker.askSize + this.ticker.bidSize) * 100
+        },
     },
     watch: {
         contract(newCon, oldCon) {

@@ -1,7 +1,6 @@
 <template>
     <v-form v-model="valid">
         <v-list dense>
-            <!-- <v-subheader>参考成本</v-subheader> -->
             <v-list-group :value="false">
                 <template v-slot:activator>
                     <v-list-item-content>
@@ -11,37 +10,25 @@
                 <v-list-item-group v-model="cost">
                     <v-list-item :value="openCost">
                         参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
-                        <!-- <v-btn @click="setOrderBaseOnCost(openCost)" dense block>
-                            参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
-                        </v-btn> -->
                     </v-list-item>
                     <v-list-item :value="sessionCost">
                         参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
-                        <!-- <v-btn @click="setOrderBaseOnCost(sessionCost)" dense block>
-                            参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
-                        </v-btn> -->
                     </v-list-item>
                     <v-list-item :value="totalCost">
                         参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
-                        <!-- <v-btn @click="setOrderBaseOnCost(totalCost)" dense  block>
-                            参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
-                        </v-btn> -->
                     </v-list-item>
-                </v-list-item-group>
-                
-                <v-list-item>
-                    <v-text-field 
-                    v-model="costOffset" 
-                    label="costOffset" 
-                    type="number"
-                    :rules="offsetRules"
-                    class="mt-5 pa-0"
-                    outlined 
-                    dense></v-text-field>
-                </v-list-item>      
+                </v-list-item-group>  
             </v-list-group>        
         </v-list>
         <v-list dense>
+            <v-list-item>
+                <v-text-field 
+                v-model="costOffset" 
+                label="costOffset" 
+                type="number"
+                outlined 
+                dense></v-text-field>
+            </v-list-item>    
             <v-list-item>
                 <v-text-field v-model="limitPrice" label="limitPrice" type="number" :rules="priceRules" disabled outlined dense></v-text-field>
                 <v-text-field 
@@ -116,7 +103,7 @@ export default {
     },
     data() {
 			return {
-                action: "",
+                action: undefined,
 				volume: "1",
                 stopPrice: "",
                 offset: "5",
@@ -189,7 +176,7 @@ export default {
                 return
             }
 
-            if (this.action == "") {
+            if (!this.action) {
                 this.$bus.$emit('notice', {
                     color: 'error',
                     title: 'Order Failed!',
@@ -244,7 +231,7 @@ export default {
             this.orderRef = `sl-${this.volume}@${avgCost}`
         },
         setOrderBaseOnAttachPrice(price) {
-            if (this.action == "") {
+            if (!this.action) {
                 this.$bus.$emit('notice', {
                     color: 'error',
                     title: 'Order Failed!',
@@ -263,7 +250,7 @@ export default {
             this.volume = "1"
             this.stopPrice = "0"
             this.offset = "0"
-            this.action = ""
+            this.action = undefined
             this.cost = null
         },
 		}

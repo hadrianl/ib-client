@@ -2,56 +2,46 @@
     <v-container fluid class='mt-1 pt-1'>
         <v-card ref="barCard">
             <v-responsive :aspect-ratio="16/9">
+                <v-toolbar dense flat>
+                    <v-btn-toggle v-model="barSize" rounded mandatory dense borderless class='period'>
+                        <v-btn value="1 min">1 min</v-btn>
+                        <v-btn value="5 mins">5 mins</v-btn>
+                        <v-btn value="10 mins">10 mins</v-btn>
+                        <v-btn value="15 mins">15 mins</v-btn>
+                    </v-btn-toggle>
+                    <v-spacer></v-spacer>
+                    <v-switch v-model="isTrail" label="Trail" dense hide-details></v-switch>
+                    <v-text-field 
+                    v-model="volume" 
+                    label="volume" 
+                    type="number" 
+                    dense
+                    outlined
+                    hide-details>
+                    </v-text-field>
+                    <v-text-field 
+                    v-model="offset" 
+                    label="offset" 
+                    type="number" 
+                    outlined 
+                    dense
+                    hide-details>
+                        <template v-slot:prepend>
+                            <v-icon
+                            :color="action?action=='BUY'?'red':'green':''"
+                            >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
+                        </template>
+                    </v-text-field>
+                </v-toolbar>
                 <v-card-text>
                     <div v-resize="onResize" ref="barChart" class="ChartContainer" id="bar-chart">
                         <Legend :legend_bar="legend_bar" :legend_ma="legend_ma"></Legend>
-                    </div>
-                    
-                </v-card-text>
-                <v-card-actions>
-                    <v-row>
-                        <v-col>
-                            <v-btn-toggle v-model="barSize" rounded mandatory>
-                            <v-btn value="1 min">1 min</v-btn>
-                            <v-btn value="5 mins">5 mins</v-btn>
-                            <v-btn value="10 mins">10 mins</v-btn>
-                            <v-btn value="15 mins">15 mins</v-btn>
-                            </v-btn-toggle>
-                        </v-col>
-                        <v-col>
-                            <v-btn-toggle v-model="action" rounded>
+                        <v-btn-toggle v-model="action" rounded dense class="action">
                             <v-btn value="BUY" color="red">BUY</v-btn>
                             <v-btn value="SELL" color="green">SELL</v-btn>
-                            </v-btn-toggle>
-                        </v-col>
-                        <v-col>
-                            <v-switch v-model="isTrail" label="Trail"></v-switch>
-                        </v-col>
-                        <v-col>
-                            <v-row>
-                                <v-text-field 
-                                v-model="volume" 
-                                label="volume" 
-                                type="number" 
-                                outlined>
-                                </v-text-field>
-                                <v-text-field 
-                                v-model="offset" 
-                                label="offset" 
-                                type="number" 
-                                outlined 
-                                hide-details>
-                                    <template v-slot:prepend>
-                                        <v-icon
-                                        :color="action?action=='BUY'?'red':'green':''"
-                                        >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
-                                    </template>
-                                </v-text-field>
-                            </v-row> 
-                        </v-col>
-                        <v-spacer />
-                    </v-row>
-                </v-card-actions>
+                        </v-btn-toggle>
+                    </div>
+                </v-card-text>
             </v-responsive>
         </v-card>
     </v-container>
@@ -147,8 +137,8 @@ export default {
             }
         })
         this.ohlcSeries.applyOptions({
-            upColor: '#6495ED',
-            downColor: '#FF6347',
+            // upColor: '#6495ED',
+            // downColor: '#FF6347',
             borderVisible: false,
             wickVisible: true,
             borderColor: '#000000',
@@ -163,6 +153,7 @@ export default {
             }
         })
         this.volSeries.applyOptions({
+            color: '#6495ED',
             scaleMargins: {
                 top: 0.6,
                 bottom: 0.02
@@ -200,6 +191,46 @@ export default {
             this.$ibws.once('bars', this.initAddition)
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract, 'barSize': newSize})
         },
+        action(value) {
+            console.log(this.chart.options().crosshair.horzLine.labelBackgroundColor)
+            switch(value) {
+                case 'BUY':
+                    this.chart.applyOptions({
+                        crosshair: {
+                            horzLine: {
+                                color: 'red',
+                                width: 2,
+                                style: 0,
+                                labelBackgroundColor: 'red',
+                            }
+                        }
+                        })
+                        break
+                case 'SELL':
+                    this.chart.applyOptions({
+                        crosshair: {
+                            horzLine: {
+                                color: 'green',
+                                width: 2,
+                                style: 0,
+                                labelBackgroundColor: 'green',
+                            }
+                        }
+                    })
+                    break
+                default:
+                    this.chart.applyOptions({
+                        crosshair: {
+                            horzLine: {
+                                color: '#758696',
+                                width: 1,
+                                style: 3,
+                                labelBackgroundColor: '#4c525e',
+                            }
+                        }
+                    })
+            }
+        }
     },
     methods: {
         handleTrade(t) {
@@ -281,7 +312,7 @@ export default {
                 volArr.push({'time': t, 'value': element.volume})
                 for(let key in maArr) {
                     if(index < key){
-                        maArr[key].push({'time': t, 'value': '-'})
+                        maArr[key].push({'time': t, 'value': NaN})
                     }else{
                         let sum = 0
                         arr.slice(index - key, index).forEach(b => sum += b.close)
@@ -480,5 +511,25 @@ export default {
     &:hover .legend {
         opacity: 1;
     }
+    }
+
+    .action {
+    position: absolute;
+    top: 1em;
+    right: 5em;
+    z-index: 3;
+    opacity: .2;
+    &:hover {
+        opacity: 1;
+    }
+    transition: opacity .2s cubic-bezier(0.005, 1, 0.22, 1);
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    }
+
+    .action-active {
+    opacity: 1;
+    color: 'blue';
     }
 </style>
