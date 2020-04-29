@@ -20,6 +20,7 @@
         dense
         outlined
         clearable
+        hide-details="auto"
         return-object>
             <template v-slot:prepend>
                 <v-icon

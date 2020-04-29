@@ -1,30 +1,10 @@
 <template>
     <v-form v-model="valid">
         <v-list dense>
-            <v-list-group :value="false">
-                <template v-slot:activator>
-                    <v-list-item-content>
-                        <v-list-item-title>参考成本</v-list-item-title>
-                    </v-list-item-content>
-                </template>
-                <v-list-item-group v-model="cost">
-                    <v-list-item :value="openCost">
-                        参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
-                    </v-list-item>
-                    <v-list-item :value="sessionCost">
-                        参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
-                    </v-list-item>
-                    <v-list-item :value="totalCost">
-                        参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
-                    </v-list-item>
-                </v-list-item-group>  
-            </v-list-group>        
-        </v-list>
-        <v-list dense>
             <v-list-item>
                 <v-text-field 
-                v-model="costOffset" 
-                label="costOffset" 
+                v-model="attachOffset" 
+                label="attachOffset" 
                 type="number"
                 outlined 
                 dense></v-text-field>
@@ -94,9 +74,6 @@
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
-// import ContractItem from '../ContractItem.vue'
-// import ContractItemVue from '../ContractItem.vue'
-// const patt = /^([A-Z]{3,})(\d{4})$/i
 export default {
     components:{
         // ContractItem
@@ -108,8 +85,8 @@ export default {
                 stopPrice: "",
                 offset: "5",
                 orderRef: "",
-                costOffset: "60",
-                cost: null,
+                attachOffset: "60",
+                attachPrice: "",
                 priceRules: [
                     v => v > 0,
                 ],
@@ -120,16 +97,23 @@ export default {
         },
     mounted() {
         this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
+        this.$bus.$on('costReference', this.setOrderBaseOnCost)
     },
     watch: {
-        cost(val) {
-            if (val) {
-                this.setOrderBaseOnCost(val)
+        attachOffset(nVal) {
+            // console.log(nVal)
+            // console.log(oVal)
+            if (!(this.attachPrice&&nVal)) {
+                return
             }
-        },
-        costOffset() {
-            if (this.cost) {
-                this.setOrderBaseOnCost(this.cost)
+            switch(this.action) {
+                case 'BUY':
+                    this.stopPrice = this.attachPrice + nVal
+                    break
+                case 'SELL':
+                    this.stopPrice = this.attachPrice - nVal
+                    break
+                default:
             }
         }
     },
@@ -149,18 +133,10 @@ export default {
         contract() {
             return this.$store.state.currentContract
         },
-        openCost() {
-            return this.$store.getters.currentOpenCost
-        },
-        sessionCost() {
-            return this.$store.getters.currentSessionCost
-        },
-        totalCost() {
-            return this.$store.getters.currentTotalCost
-        },
     },
     beforeDestroy() {
         this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
+        this.$bus.$off('costReference', this.setOrderBaseOnCost)
 	},
     methods: {
         insertOrder() {
@@ -210,27 +186,18 @@ export default {
 
 
         },
-        setOrderBaseOnCost(cost){
+        setOrderBaseOnCost(cost) {
             console.log(cost)
-            if(!cost[1]){
-                this.$bus.$emit('notice', {
-                    color: 'error',
-                    title: 'Set Order Ref failed!',
-                    content: "无法参考0持仓设置止损单",
-                    timeout: 4000
-                })
-                this.cost = null
-                return
-            }
-
             this.volume = Math.abs(cost[1])
-            const avgCost = parseInt(cost[0]/cost[1])
-            const costOffset = parseInt(this.costOffset)
-            this.stopPrice = cost[1]>0? avgCost - costOffset:avgCost + costOffset
+            this.attachPrice = cost[0]/cost[1]
+            const avgCost = parseInt(this.attachPrice)
+            const attachOffset = parseInt(this.attachOffset)
+            this.stopPrice = cost[1]>0? avgCost - attachOffset:avgCost + attachOffset
             this.action = cost[1]>0?"SELL":"BUY"
             this.orderRef = `sl-${this.volume}@${avgCost}`
         },
         setOrderBaseOnAttachPrice(price) {
+            if(!price) return
             if (!this.action) {
                 this.$bus.$emit('notice', {
                     color: 'error',
@@ -240,18 +207,20 @@ export default {
                 })
                 return
             }
-
-            const costOffset = parseInt(this.costOffset)
-            this.stopPrice = this.action == 'BUY'? price + costOffset: price - costOffset
+            this.attachPrice = price
+            const attachOffset = parseInt(this.attachOffset)
+            this.stopPrice = this.action == 'BUY'? price + attachOffset: price - attachOffset
 
         },
         reset() {
             // this.$refs.contract.currentContract = null
             this.volume = "1"
             this.stopPrice = "0"
-            this.offset = "0"
+            this.offset = "5"
             this.action = undefined
-            this.cost = null
+            this.attachPrice = "0"
+            this.attachOffset = "60"
+            // this.cost = null
         },
 		}
 }

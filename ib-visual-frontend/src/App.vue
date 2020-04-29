@@ -29,13 +29,13 @@
       v-model="hostname"
       placeholder="backend hostname"
       :disabled=noedit
-      class="mt-8 pa-8"
+      hide-details="auto"
       solo
       single-line />
       <v-btn color="success" @click.stop=connectBackendWS>连接</v-btn>
       <v-btn color="error" @click.stop=stopBackendWS>停止</v-btn>
       <v-spacer />
-      <ContractItem class="mt-5 pa-8"></ContractItem>
+      <ContractItem></ContractItem>
     </v-app-bar>
     <v-content>
         <router-view></router-view>
@@ -55,19 +55,19 @@
       @click="snackbar.isShow = false">Close</v-btn>
     
     </v-snackbar>
-    <v-footer app>
-      <v-row
-      align="center"
-      justify="center">
-        <v-alert
-        width="100%"
-        dense
-        text
-        class="text-center"
-        :type="isConnect?'success':'error'">
-        {{isConnect?"已连接":"未连接"}}</v-alert>
-      </v-row>
-        
+    
+    <v-footer app value='fixed' padless>
+      <v-col
+      class='ma-0 pa-0'
+      cols="12">
+        <v-system-bar
+        :color="isConnect?'success':'error'"
+        >
+          <v-spacer></v-spacer>
+          <span><strong>{{isConnect?"已连接":"未连接"}}</strong></span>
+          <v-spacer></v-spacer>
+        </v-system-bar>
+      </v-col>
     </v-footer>
   </v-app>
 

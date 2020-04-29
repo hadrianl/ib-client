@@ -1,30 +1,10 @@
 <template>
     <v-form v-model="valid">
-        <v-list dense>
-            <v-list-group :value="false">
-                <template v-slot:activator>
-                    <v-list-item-content>
-                        <v-list-item-title>参考成本</v-list-item-title>
-                    </v-list-item-content>
-                </template>
-                <v-list-item-group v-model="cost">
-                    <v-list-item :value="openCost">
-                        参考开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
-                    </v-list-item>
-                    <v-list-item :value="sessionCost">
-                        参考会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
-                    </v-list-item>
-                    <v-list-item :value="totalCost">
-                        参考总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
-                    </v-list-item>
-                </v-list-item-group>    
-            </v-list-group> 
-        </v-list>
         <v-list dense>                
             <v-list-item>
                 <v-text-field 
-                v-model="costOffset" 
-                label="costOffset" 
+                v-model="attachOffset" 
+                label="attachOffset" 
                 type="number"
                 :rules="offsetRules"
                 outlined 
@@ -113,7 +93,8 @@ export default {
                 action: undefined,
 				volume: "1",
                 priceTick: 1,
-                costOffset: "60",
+                attachPrice: "0",
+                attachOffset: "60",
                 cost: null,
                 trailStopPrice: "0",
                 trailAmount: "0",
@@ -129,16 +110,25 @@ export default {
         },
     mounted() {
         this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
+        this.$bus.$on('costReference', this.setOrderBaseOnCost)
     },
     watch: {
-        cost(val) {
-            if (val) {
-                this.setOrderBaseOnCost(val)
+        attachOffset(nVal) {
+            // console.log(nVal)
+            // console.log(oVal)
+            if (!(this.attachPrice&&nVal)) {
+                return
             }
-        },
-        costOffset() {
-            if (this.cost) {
-                this.setOrderBaseOnCost(this.cost)
+            switch(this.action) {
+                case 'BUY':
+                    this.trailStopPrice = this.attachPrice + nVal
+                    this.trailAmount = this.attachOffset
+                    break
+                case 'SELL':
+                    this.trailStopPrice = this.attachPrice - nVal
+                    this.trailAmount = this.attachOffset
+                    break
+                default:
             }
         }
     },
@@ -146,18 +136,10 @@ export default {
         contract() {
             return this.$store.state.currentContract
         },
-        openCost() {
-            return this.$store.getters.currentOpenCost
-        },
-        sessionCost() {
-            return this.$store.getters.currentSessionCost
-        },
-        totalCost() {
-            return this.$store.getters.currentTotalCost
-        },
     },
     beforeDestroy() {
         this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
+        this.$bus.$off('costReference', this.setOrderBaseOnCost)
 	},
     methods: {
         insertOrder() {
@@ -201,27 +183,17 @@ export default {
 
         },
         setOrderBaseOnCost(cost){
-            console.log(cost)
-            if(!cost[1]){
-                this.$bus.$emit('notice', {
-                    color: 'error',
-                    title: 'Set Order Ref failed!',
-                    content: "无法参考0持仓设置止损单",
-                    timeout: 4000
-                })
-                this.cost = null
-                return
-            }
-
             this.volume = Math.abs(cost[1])
-            const avgCost = parseInt(cost[0]/cost[1])
-            const costOffset = parseInt(this.costOffset)
-            this.trailStopPrice = cost[1]>0? avgCost - costOffset:avgCost + costOffset
-            this.trailAmount = this.costOffset
+            this.attachPrice = cost[0]/cost[1]
+            const avgCost = parseInt(this.attachPrice)
+            const attachOffset = parseInt(this.attachOffset)
+            this.trailStopPrice = cost[1]>0? avgCost - attachOffset:avgCost + attachOffset
+            this.trailAmount = this.attachOffset
             this.action = cost[1]>0?"SELL":"BUY"
             this.orderRef = `trailsl-${this.volume}@${avgCost}`
         },
         setOrderBaseOnAttachPrice(price) {
+            if(!price) return
             if (!this.action) {
                 this.$bus.$emit('notice', {
                     color: 'error',
@@ -232,9 +204,10 @@ export default {
                 return
             }
 
-            const costOffset = parseInt(this.costOffset)
-            this.trailStopPrice = this.action == 'BUY'? price + costOffset: price - costOffset
-            this.trailAmount = costOffset
+            this.attachPrice = price
+            const attachOffset = parseInt(this.attachOffset)
+            this.trailStopPrice = this.action == 'BUY'? price + attachOffset: price - attachOffset
+            this.trailAmount = attachOffset
             this.orderRef = `trailsl-${this.volume}@${price}`
         },
         reset() {
@@ -243,7 +216,8 @@ export default {
             this.lmtPriceOffset = "0"
             this.trailAmount = "0"
             this.action = undefined
-            this.costOffset = "60"
+            this.attachPrice = ""
+            this.attachOffset = "60"
         },
 		}
 }
