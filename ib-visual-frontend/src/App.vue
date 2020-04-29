@@ -94,7 +94,7 @@ export default {
       drawer: null,
       currentPage: 0,
       items: [
-        { icon: 'mdi-youtube-subscription', text: '交易', path: '/main' },
+        { icon: 'mdi-handshake', text: '交易', path: '/main' },
         { icon: 'mdi-trending-up', text: '行情' , path: '/bar'}],
 			activeItem: "order",
 			hostname: "localhost",
