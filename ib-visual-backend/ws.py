@@ -58,31 +58,21 @@ class IBWS:
         logger.info(f'Unregister User: {user}')
         # TODO: maybe there is a better solution
         for conId, barSize in self.BAR2USER:
-            print(conId)
             if user in self.BAR2USER[(conId, barSize)]:
                 self.BAR2USER[(conId, barSize)].remove(user)  # remove ws from BAR2USER
-                print(self.BAR2USER[(conId, barSize)])
-                print(bool(not self.BAR2USER[(conId, barSize)]))
 
             if not self.BAR2USER[(conId, barSize)]:  # disconnect the send_bar if no ws, for global check cleanup
-                print('empty bar')
                 for _, bs in self.ib.wrapper.reqId2Subscriber.items():
                     if isinstance(bs, BarDataList) and bs.contract.conId == conId and bs.barSizeSetting == barSize:
-                        print("-= send_bar")
                         bs.updateEvent -= self.send_bar
 
         for conId in self.TICK2USER:
-            print(conId)
             if user in self.TICK2USER[conId]:
                 self.TICK2USER[conId].remove(user)
-                print(self.TICK2USER[conId])
-                print(bool(not self.TICK2USER[conId]))
                 
             if not self.TICK2USER[conId]:
-                print('empty tick')
                 for _, t in self.ib.wrapper.reqId2Ticker.items():
                     if t.contract.conId == conId:
-                        print("-= send_ticker")
                         t.updateEvent -= self.send_ticker
 
     async def handle_trade_event(self, event_name):
@@ -152,7 +142,7 @@ class IBWS:
         self.ib.cancelOrder(order)
 
     async def sub_klines(self, contract, barSize, ws):
-        print(f'sub_klines:{contract.conId}')
+        logger.info(f'sub_klines:{contract.conId}')
         for _, bs in self.ib.wrapper.reqId2Subscriber.items():
             if isinstance(bs, BarDataList) and bs.contract == contract and bs.barSizeSetting == barSize:
                 bars = bs
@@ -175,12 +165,12 @@ class IBWS:
 
     async def unsub_klines(self, contract, barSize, ws):
         conId = contract.conId
-        print(f'unsub_klines:{conId}')
+        logger.info(f'unsub_klines:{conId}')
         if ws in self.BAR2USER[(conId, barSize)]:
             self.BAR2USER[(conId, barSize)].remove(ws)
 
     async def sub_ticker(self, contract, ws):
-        print(f'sub_ticker:{contract.conId}')
+        logger.info(f'sub_ticker:{contract.conId}')
         for _, t in self.ib.wrapper.reqId2Ticker.items():
             if t.contract == contract:
                 ticker: Ticker = t
@@ -199,7 +189,7 @@ class IBWS:
     
     async def unsub_ticker(self, contract, ws):
         conId = contract.conId
-        print(f'unsub_ticker:{conId}')
+        logger.info(f'unsub_ticker:{conId}')
         if ws in self.TICK2USER[conId]:
             self.TICK2USER[conId].remove(ws)
    
@@ -236,10 +226,13 @@ class IBWS:
     def send_ticker(self, ticker):
         conId = ticker.contract.conId
         for u in self.TICK2USER[conId]:
-            self.ib.run(u.send(json.dumps({
-                't': 'ticker',
-                'data': {'time': str(ticker.time), 'bid': ticker.bid, 'bidSize': ticker.bidSize, 'ask': ticker.ask, 'askSize': ticker.askSize, 'last': ticker.last, 'lastSize': ticker.lastSize, 'conId': conId}
-            })))
+            self.ib.run(
+                u.send(json.dumps({
+                    't': 'ticker', 
+                    'data': {'time': str(ticker.time), 'bid': ticker.bid, 'bidSize': ticker.bidSize, 'ask': ticker.ask, 'askSize': ticker.askSize, 'last': ticker.last, 'lastSize': ticker.lastSize, 'conId': conId}
+                    })
+                )
+            )
 
 
     async def place_dynamic_order(self, contract, order: Order, options, ws):
@@ -410,12 +403,10 @@ class IBWS:
 
             for _, sub in self.ib.wrapper.reqId2Subscriber.items():  # check if has uncompleted event
                 if len(sub.updateEvent):
-                    print(sub.updateEvent)
                     close_flag = False
 
             for _, t in self.ib.wrapper.reqId2Ticker.items():
                 if len(t.updateEvent):
-                    print(t.updateEvent)
                     close_flag = False
             
             if close_flag:
