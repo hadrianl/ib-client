@@ -93,7 +93,7 @@ export default {
                 offsetRules: [
                 ],
                 valid: false,
-			};
+			}
         },
     mounted() {
         this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)

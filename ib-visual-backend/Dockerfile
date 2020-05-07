@@ -16,7 +16,14 @@ RUN apk add --no-cache wget build-base && \
     cd .. && rm -rf ta-lib-0.4.0-src.tar.gz ta-lib/ && \
     pip install --no-cache-dir TA-Lib numpy -i https://pypi.douban.com/simple && \
     apk del wget build-base
-    
+
+# set time zone
+RUN apk add tzdata && \
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    date -R && \
+    apk del tzdata
+
 COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.douban.com/simple 

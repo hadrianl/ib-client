@@ -1,40 +1,41 @@
 <template>
     <v-container fluid class='mt-1 pt-1'>
-        <v-card ref="barCard">
+        <v-card ref="barCard" color="#BEBEBE">
+            <v-toolbar dense flat color="#BEBEBE">
+                <v-btn-toggle v-model="barSize" rounded mandatory dense borderless class='period'>
+                    <v-btn value="1 min">1 min</v-btn>
+                    <v-btn value="5 mins">5 mins</v-btn>
+                    <v-btn value="10 mins">10 mins</v-btn>
+                    <v-btn value="15 mins">15 mins</v-btn>
+                </v-btn-toggle>
+                <v-spacer></v-spacer>
+                <v-switch v-model="isTrail" label="Trail" dense hide-details></v-switch>
+                <v-text-field 
+                v-model="volume" 
+                label="volume" 
+                type="number" 
+                :rules="volRules"
+                dense
+                outlined
+                hide-details>
+                </v-text-field>
+                <v-text-field 
+                v-model="offset" 
+                label="offset" 
+                type="number" 
+                outlined 
+                dense
+                hide-details>
+                    <template v-slot:prepend>
+                        <v-icon
+                        :color="action?action=='BUY'?'red':'green':''"
+                        >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
+                    </template>
+                </v-text-field>
+            </v-toolbar>
             <v-responsive :aspect-ratio="16/9">
-                <v-toolbar dense flat>
-                    <v-btn-toggle v-model="barSize" rounded mandatory dense borderless class='period'>
-                        <v-btn value="1 min">1 min</v-btn>
-                        <v-btn value="5 mins">5 mins</v-btn>
-                        <v-btn value="10 mins">10 mins</v-btn>
-                        <v-btn value="15 mins">15 mins</v-btn>
-                    </v-btn-toggle>
-                    <v-spacer></v-spacer>
-                    <v-switch v-model="isTrail" label="Trail" dense hide-details></v-switch>
-                    <v-text-field 
-                    v-model="volume" 
-                    label="volume" 
-                    type="number" 
-                    dense
-                    outlined
-                    hide-details>
-                    </v-text-field>
-                    <v-text-field 
-                    v-model="offset" 
-                    label="offset" 
-                    type="number" 
-                    outlined 
-                    dense
-                    hide-details>
-                        <template v-slot:prepend>
-                            <v-icon
-                            :color="action?action=='BUY'?'red':'green':''"
-                            >{{action?action=='BUY'?'mdi-arrow-collapse-up':'mdi-arrow-collapse-down':''}}</v-icon>
-                        </template>
-                    </v-text-field>
-                </v-toolbar>
-                <v-card-text>
-                    <div v-resize="onResize" ref="barChart" class="ChartContainer" id="bar-chart">
+                <v-card-text v-resize="onResize">
+                    <div ref="barChart" class="ChartContainer" id="bar-chart">
                         <Legend :legend_bar="legend_bar" :legend_ma="legend_ma"></Legend>
                         <v-btn-toggle v-model="action" rounded dense class="action">
                             <v-btn value="BUY" color="red">BUY</v-btn>
@@ -98,13 +99,20 @@ export default {
             offset: 0,
             isTrail: false,
             legend_bar: {time: NaN, open: NaN, high: NaN, low: NaN, close: NaN, volume: NaN},
-            legend_ma: {5: NaN, 10: NaN, 30: NaN, 60: NaN}
+            legend_ma: {5: NaN, 10: NaN, 30: NaN, 60: NaN},
+            volRules: [
+                    v => v > 0,
+                ],
         }
     },
     mounted() {
         const chartOptions = {
             width: this.$refs.barChart.clientWidth, 
             height: window.innerHeight * 0.7,
+            layout: {
+                backgroundColor: '#BEBEBE',
+                textColor: '#000000',
+            },
             timeScale: {
                 rightOffset: 10,
                 // barSpacing: number;
@@ -143,10 +151,10 @@ export default {
             wickVisible: true,
             borderColor: '#000000',
             wickColor: '#000000',
-            borderUpColor: '#4682B4',
-            borderDownColor: '#A52A2A',
-            wickUpColor: "#4682B4",
-            wickDownColor: "#A52A2A",
+            // borderUpColor: '#4682B4',
+            // borderDownColor: '#A52A2A',
+            // wickUpColor: "#4682B4",
+            // wickDownColor: "#A52A2A",
             scaleMargins: {
                 top: 0.1,
                 bottom: 0.3
@@ -344,7 +352,6 @@ export default {
                 let sum = 0
                 let size = this.ohlcSeries.series().data().size()
                 for(let i = key;i > 0; i--){
-                    console.log(this.ohlcSeries.series().dataAt(size - i))
                     sum += this.ohlcSeries.series().dataAt(size - i).close
                 }
                 this.maSeries[key].update({'time': t, 'value': sum / key})
