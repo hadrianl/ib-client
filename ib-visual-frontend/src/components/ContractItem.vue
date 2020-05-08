@@ -42,14 +42,11 @@ export default {
     computed: {
         currentItem() {
             const c = this.$store.state.currentContract
-            if(!c) {
-                return null
-            }
 
-            return  {
-                    'symbol': c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4),
-                    'contract': c,
-                    }
+            if(!c) return null
+
+            return  {'symbol': c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4),
+                    'contract': c,}
         },
         hasContract() {
             return Boolean(this.$store.state.currentContract)
@@ -66,10 +63,11 @@ export default {
         }
     },
     mounted() {
-        var _this = this
-        this.$ibws.on('contract', function(c) {
-            _this.$store.commit('addContract', c)
-        })
+        // var _this = this
+        // this.$ibws.on('contract', function(c) {
+        //     _this.$store.commit('addContract', c)
+        // })
+        this.$ibws.on('contract', c => this.$store.commit('addContract', c))
 
     },
     methods: {
@@ -88,15 +86,15 @@ export default {
     },
     watch: {
         search(val) {
-            console.log(val)
             var ret = patt.exec(val)
             if (ret) {
                 let flag = true
-                this.itemsList.forEach(function(c){
-                if (c.symbol === ret[0]){
-                    flag = false
-                }
-                })
+                this.itemsList.forEach( c => {if(c.symbol === ret[0]) {flag = false}})
+                    // function(c){
+                    //     if (c.symbol === ret[0]){
+                    //         flag = false
+                    //     }
+                    // })
 
                 if (flag){
                     var c = new Contract()

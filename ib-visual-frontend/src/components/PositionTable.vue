@@ -44,17 +44,6 @@ export default {
             return this.$store.state.positionsList
         }
     },
-    created() {
-
-    },
-    mounted() {
-
-    },
-    beforeDestroy() {
-        // 实例销毁之前调用。在这一步，实例仍然完全可用。
-        // Vue.$ibws.off('positions')
-        // Vue.$ibws.off('position')
-    },
     methods: {
         rowClassName(row) {
             switch (true){
@@ -70,16 +59,5 @@ export default {
         }
 </script>
 <style>
-    .ivu-table .table-positive-row td{
-        background-color: #FFC1C1;
-        color: #000;
-    }
-    .ivu-table .table-negative-row td{
-        background-color: #C1FFC1;
-        color: #000;
-    }
-    .ivu-table .table-normal-row td{
-        background-color: #FFFFFF;
-        color: #000;
-    }
+
 </style>

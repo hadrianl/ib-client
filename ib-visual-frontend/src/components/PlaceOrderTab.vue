@@ -41,22 +41,5 @@ export default {
 }
 </script>
 <style>
-    .tabs-style > .ivu-tabs-card > .ivu-tabs-content {
-        /* height: 120px; */
-        margin-top: -16px;
-    }
-
-    .tabs-style > .ivu-tabs-card > .ivu-tabs-content > .ivu-tabs-tabpane {
-        background: #fff;
-        padding: 16px;
-    }
-
-    .tabs-style > .ivu-tabs.ivu-tabs-card > .ivu-tabs-bar .ivu-tabs-tab {
-        border-color: transparent;
-    }
-
-    .tabs-style > .ivu-tabs-card > .ivu-tabs-bar .ivu-tabs-tab-active {
-        border-color: #fff;
-    }
 
 </style>

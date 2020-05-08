@@ -3,7 +3,7 @@
         <v-list dense>                
             <v-list-item>
                 <v-text-field 
-                v-model="attachOffset" 
+                v-model.number="attachOffset" 
                 label="attachOffset" 
                 type="number"
                 :rules="offsetRules"
@@ -11,9 +11,9 @@
                 dense></v-text-field>
             </v-list-item>  
             <v-list-item>
-                <v-text-field v-model="trailStopPrice" label="trailStopPrice" type="number" :rules="priceRules" outlined dense></v-text-field>
+                <v-text-field v-model.number="trailStopPrice" label="trailStopPrice" type="number" :rules="priceRules" outlined dense></v-text-field>
                 <v-text-field 
-                v-model="volume"
+                v-model.number="volume"
                 prepend-icon="mdi-location-enter"
                 label="volume" 
                 type="number"
@@ -23,7 +23,7 @@
                 </v-text-field>
             </v-list-item>
             <v-list-item>
-                <v-text-field v-model="trailAmount" label="trailAmount" type="number" :rules="priceRules" outlined dense>
+                <v-text-field v-model.number="trailAmount" label="trailAmount" type="number" :rules="priceRules" outlined dense>
                     <template v-slot:prepend>
                         <v-icon
                         :color="action?action=='BUY'?'red':'green':''"
@@ -31,7 +31,7 @@
                     </template>
                 </v-text-field>
                 <v-text-field 
-                v-model="lmtPriceOffset" 
+                v-model.number="lmtPriceOffset" 
                 label="lmtPriceOffset" 
                 type="number"
                 :rules="offsetRules"
@@ -81,9 +81,6 @@
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
-// import ContractItem from '../ContractItem.vue'
-// import ContractItemVue from '../ContractItem.vue'
-// const patt = /^([A-Z]{3,})(\d{4})$/i
 export default {
     components:{
         // ContractItem
@@ -91,14 +88,13 @@ export default {
     data() {
 			return {
                 action: undefined,
-				volume: "1",
-                priceTick: 1,
-                attachPrice: "0",
-                attachOffset: "60",
+				volume: 1,
+                attachPrice: 0,
+                attachOffset: 60,
                 cost: null,
-                trailStopPrice: "0",
-                trailAmount: "0",
-                lmtPriceOffset: "0",
+                trailStopPrice: 0,
+                trailAmount: 0,
+                lmtPriceOffset: 0,
                 orderRef: "",
                 priceRules: [
                     v => v > 0,
@@ -185,10 +181,10 @@ export default {
         setOrderBaseOnCost(cost){
             this.volume = Math.abs(cost[1])
             this.attachPrice = cost[0]/cost[1]
-            const avgCost = parseInt(this.attachPrice)
-            const attachOffset = parseInt(this.attachOffset)
+            const avgCost = this.attachPrice
+            const attachOffset = this.attachOffset
             this.trailStopPrice = cost[1]>0? avgCost - attachOffset:avgCost + attachOffset
-            this.trailAmount = this.attachOffset
+            this.trailAmount = attachOffset
             this.action = cost[1]>0?"SELL":"BUY"
             this.orderRef = `trailsl-${this.volume}@${avgCost}`
         },
@@ -205,19 +201,19 @@ export default {
             }
 
             this.attachPrice = price
-            const attachOffset = parseInt(this.attachOffset)
+            const attachOffset = this.attachOffset
             this.trailStopPrice = this.action == 'BUY'? price + attachOffset: price - attachOffset
             this.trailAmount = attachOffset
             this.orderRef = `trailsl-${this.volume}@${price}`
         },
         reset() {
-            this.volume = "1"
-            this.trailStopPrice = "0"
-            this.lmtPriceOffset = "0"
-            this.trailAmount = "0"
+            this.volume = 1
+            this.trailStopPrice = 0
+            this.lmtPriceOffset = 0
+            this.trailAmount = 0
             this.action = undefined
-            this.attachPrice = ""
-            this.attachOffset = "60"
+            this.attachPrice = 0
+            this.attachOffset = 60
         },
 		}
 }

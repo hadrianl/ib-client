@@ -3,16 +3,16 @@
         <v-list dense>
             <v-list-item>
                 <v-text-field 
-                v-model="attachOffset" 
+                v-model.number="attachOffset" 
                 label="attachOffset" 
                 type="number"
                 outlined 
                 dense></v-text-field>
             </v-list-item>    
             <v-list-item>
-                <v-text-field v-model="limitPrice" label="limitPrice" type="number" :rules="priceRules" disabled outlined dense></v-text-field>
+                <v-text-field v-model.number="limitPrice" label="limitPrice" type="number" :rules="priceRules" disabled outlined dense></v-text-field>
                 <v-text-field 
-                v-model="volume"
+                v-model.number="volume"
                 prepend-icon="mdi-location-enter"
                 label="volume" 
                 type="number"
@@ -22,9 +22,9 @@
                 </v-text-field>
             </v-list-item>
             <v-list-item>
-                <v-text-field v-model="stopPrice" label="stopPrice" type="number" :rules="priceRules" outlined dense></v-text-field>
+                <v-text-field v-model.number="stopPrice" label="stopPrice" type="number" :rules="priceRules" outlined dense></v-text-field>
                 <v-text-field 
-                v-model="offset" 
+                v-model.number="offset" 
                 label="offset" 
                 type="number"
                 :rules="offsetRules"
@@ -81,12 +81,12 @@ export default {
     data() {
 			return {
                 action: undefined,
-				volume: "1",
-                stopPrice: "",
-                offset: "5",
+				volume: 1,
+                stopPrice: 0,
+                offset: 5,
                 orderRef: "",
-                attachOffset: "60",
-                attachPrice: "",
+                attachOffset: 60,
+                attachPrice: 0,
                 priceRules: [
                     v => v > 0,
                 ],
@@ -119,8 +119,8 @@ export default {
     },
     computed: {
         limitPrice() {
-            const sp = parseInt(this.stopPrice)
-            const offset = parseInt(this.offset)
+            const sp = this.stopPrice
+            const offset = this.offset
             switch (this.action) {
                     case "BUY":
                         return sp + offset
@@ -190,8 +190,8 @@ export default {
             console.log(cost)
             this.volume = Math.abs(cost[1])
             this.attachPrice = cost[0]/cost[1]
-            const avgCost = parseInt(this.attachPrice)
-            const attachOffset = parseInt(this.attachOffset)
+            const avgCost = this.attachPrice
+            const attachOffset = this.attachOffset
             this.stopPrice = cost[1]>0? avgCost - attachOffset:avgCost + attachOffset
             this.action = cost[1]>0?"SELL":"BUY"
             this.orderRef = `sl-${this.volume}@${avgCost}`
@@ -208,18 +208,18 @@ export default {
                 return
             }
             this.attachPrice = price
-            const attachOffset = parseInt(this.attachOffset)
+            const attachOffset = this.attachOffset
             this.stopPrice = this.action == 'BUY'? price + attachOffset: price - attachOffset
 
         },
         reset() {
             // this.$refs.contract.currentContract = null
-            this.volume = "1"
-            this.stopPrice = "0"
-            this.offset = "5"
+            this.volume = 1
+            this.stopPrice = 0
+            this.offset = 5
             this.action = undefined
-            this.attachPrice = "0"
-            this.attachOffset = "60"
+            this.attachPrice = 0
+            this.attachOffset = 60
             // this.cost = null
         },
 		}

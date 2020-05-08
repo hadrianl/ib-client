@@ -3,13 +3,13 @@
         <v-list dense>
             <v-list-item>
                 <v-text-field 
-                v-model="volume" 
+                v-model.number="volume" 
                 label="volume" 
                 type="number" 
                 dense
                 outlined></v-text-field>
                 <v-text-field 
-                v-model="lmtOffset" 
+                v-model.number="lmtOffset" 
                 label="lmtOffset" 
                 type="number"
                 :rules="offsetRules"
@@ -31,7 +31,7 @@
                 dense
                 outlined></v-text-field>
                 <v-text-field 
-                v-model="triggerOffset" 
+                v-model.number="triggerOffset" 
                 label="triggerOffset" 
                 type="number" 
                 :rules="offsetRules"
@@ -79,9 +79,9 @@ export default {
     data() {
 			return {
                 action: undefined,
-				volume: "1",
-                lmtOffset: "0",
-                triggerOffset: "0",
+				volume: 1,
+                lmtOffset: 0,
+                triggerOffset: 0,
                 trigger: '',
                 triggerRules: [
                     v => /ma\d+/i.test(v)
@@ -117,9 +117,7 @@ export default {
     },
     methods: {
         insertOrder() {
-            // const contract = this.$refs.contract.currentContract
             const contract = this.contract
-            console.log(contract)
             if (contract == null) {
                 this.$bus.$emit('notice', {
                     color: 'error',
@@ -172,13 +170,11 @@ export default {
             console.log({'action': 'place_dynamic_order', 'contract': contract, 'order': order, 'options': {}})
             this.$ibws.send({'action': 'place_dynamic_order', 'contract': contract, 'order': order, 'options': options})
 
-
         },
         reset() {
-            // this.$refs.contract.currentContract = null
-            this.volume = "1"
-            this.triggerOffset = "0"
-            this.lmtOffset = "0"
+            this.volume = 1
+            this.triggerOffset = 0
+            this.lmtOffset = 0
             this.action = undefined
         },
         getTriggerOptions() {

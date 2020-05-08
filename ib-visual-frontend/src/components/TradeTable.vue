@@ -23,9 +23,6 @@
 export default {
     data() {
         return {
-            // cancelled_status: ['Cancelled', 'ApiCancelled'],
-            // done_status: ['Cancelled', 'ApiCancelled', 'Filled'],
-            // tradesArr: [],
             headers : [
                 {
                     text: 'permId',
@@ -136,12 +133,6 @@ export default {
             return trades
         }
     },
-    mounted() {
-
-    },
-    beforeDestroy() {
-
-	},
     methods: {
         isDone(status) {
             return ['Cancelled', 'ApiCancelled', 'Filled'].indexOf(status) == -1
@@ -153,22 +144,5 @@ export default {
 }
 </script>
 <style>
-    .ivu-table .table-filled-row td{
-        background-color: #ff6600;
-        color: #000;
-    }
-    .ivu-table .table-submitted-row td{
-        background-color: #2db7f5;
-        color: #000;
-    }
-    .ivu-table .table-presubmitted-row td{
-        background-color: #187;
-        color: #000;
-    }
-
-    .ivu-table .table-cancelled-row td{
-        background-color: #DCDCDC;
-        color: #000;
-    }
 
 </style>

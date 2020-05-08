@@ -1,28 +1,31 @@
 <template>
     <v-container fluid class='mt-1 pt-1'>
-        <v-card ref="barCard" color="#BEBEBE">
-            <v-toolbar dense flat color="#BEBEBE">
-                <v-btn-toggle v-model="barSize" rounded mandatory dense borderless class='period'>
+        <v-card ref="barCard" :color="colors.background">
+            <v-toolbar dense flat :color="colors.background">
+                <v-btn-toggle v-model="barSize" rounded mandatory dense borderless dark class='period'>
                     <v-btn value="1 min">1 min</v-btn>
+                    <v-btn value="3 mins">3 mins</v-btn>
                     <v-btn value="5 mins">5 mins</v-btn>
                     <v-btn value="10 mins">10 mins</v-btn>
                     <v-btn value="15 mins">15 mins</v-btn>
                 </v-btn-toggle>
                 <v-spacer></v-spacer>
-                <v-switch v-model="isTrail" label="Trail" dense hide-details></v-switch>
+                <v-switch v-model="isTrail" label="Trail" dark dense hide-details></v-switch>
                 <v-text-field 
-                v-model="volume" 
+                v-model.number="volume" 
                 label="volume" 
                 type="number" 
+                dark
                 :rules="volRules"
                 dense
                 outlined
                 hide-details>
                 </v-text-field>
                 <v-text-field 
-                v-model="offset" 
+                v-model.number="offset" 
                 label="offset" 
                 type="number" 
+                dark
                 outlined 
                 dense
                 hide-details>
@@ -35,7 +38,21 @@
             </v-toolbar>
             <v-responsive :aspect-ratio="16/9">
                 <v-card-text v-resize="onResize">
-                    <div ref="barChart" class="ChartContainer" id="bar-chart">
+                    <div ref="barChart" class="ChartContainer" id="bar-chart" @contextmenu.prevent="showMenu">
+                        <v-menu
+                            v-model="menu.isShow"
+                            :position-x="menu.x"
+                            :position-y="menu.y"
+                            min-width="200"
+                            absolute
+                            offset-y
+                            >
+                            <v-list>
+                                <v-list-item @click="cancelAll()">
+                                    <v-list-item-title>Cancel All</v-list-item-title>
+                                </v-list-item>
+                            </v-list>
+                        </v-menu>
                         <Legend :legend_bar="legend_bar" :legend_ma="legend_ma"></Legend>
                         <v-btn-toggle v-model="action" rounded dense class="action">
                             <v-btn value="BUY" color="red">BUY</v-btn>
@@ -50,7 +67,7 @@
 
 </template>
 <script>
-import { createChart, LineStyle} from 'lightweight-charts'
+import { createChart, LineStyle } from 'lightweight-charts'
 import {Order} from '../plugins/datastructure.js'
 import {orderKey} from '../store/store.js'
 import Legend from '../components/charts/Legend.vue'
@@ -75,12 +92,14 @@ export default {
         markers() {
             let arr = []
             this.fills.forEach(f => arr.push({
-                        time: new Date(f.execution.time).getTime() / 1000 + 28800,
+                        time: f.time,
                         position: f.execution.side==='BOT'?'belowBar':'aboveBar',
                         shape: f.execution.side==='BOT'?'arrowUp':'arrowDown',
                         color: f.execution.side==='BOT'?'red':'green',
                         id: f.execution.permId,
+                        size: 0.1,
                     }))
+            console.log(arr)
             arr.sort((a, b)=>a.time - b.time)
             return arr
         }
@@ -103,6 +122,16 @@ export default {
             volRules: [
                     v => v > 0,
                 ],
+            menu: {
+                isShow: false,
+                x: NaN,
+                y: NaN,
+            },
+            colors: {
+                background: '#000000',
+                text: "#FFFFFF",
+                tool: "#FFFFFF",
+            }
         }
     },
     mounted() {
@@ -110,8 +139,18 @@ export default {
             width: this.$refs.barChart.clientWidth, 
             height: window.innerHeight * 0.7,
             layout: {
-                backgroundColor: '#BEBEBE',
-                textColor: '#000000',
+                backgroundColor: this.colors.background,
+                textColor: this.colors.text,
+            },
+            grid: {
+                vertLines: {
+                    color: "#D8BFD8",
+                    style: LineStyle.SparseDotted,
+                },
+                horzLines: {
+                    color: "#D8BFD8",
+                    style: LineStyle.SparseDotted,
+                }
             },
             timeScale: {
                 rightOffset: 10,
@@ -147,10 +186,10 @@ export default {
         this.ohlcSeries.applyOptions({
             // upColor: '#6495ED',
             // downColor: '#FF6347',
-            borderVisible: false,
+            // borderVisible: false,
             wickVisible: true,
-            borderColor: '#000000',
-            wickColor: '#000000',
+            // borderColor: '#000000',
+            wickColor: '#FFFFFF',
             // borderUpColor: '#4682B4',
             // borderDownColor: '#A52A2A',
             // wickUpColor: "#4682B4",
@@ -184,6 +223,7 @@ export default {
         if (this.contract){
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
         }
+
     },
     watch: {
         contract(newCon, oldCon) {
@@ -241,6 +281,18 @@ export default {
         }
     },
     methods: {
+        showMenu(e) {
+            e.preventDefault()
+            this.menu.isShow = false
+            this.menu.x = e.clientX
+            this.menu.y = e.clientY
+            this.$nextTick(() => {
+                this.menu.isShow = true
+                })
+        },
+        cancelAll() {
+            this.$ibws.send({'action': 'cancel_all'})
+        },
         handleTrade(t) {
             // check contract
             if (t.contract.conId != this.contract.conId){
@@ -327,13 +379,6 @@ export default {
                         maArr[key].push({'time': t, 'value':sum / key})
                     }
                 }
-                // if(index < 5){
-                //     maArr.push({'time': t, 'value': '-'})
-                // }else{
-                //     let sum = 0
-                //     arr.slice(index - 5, index).forEach(b => sum += b.close)
-                //     maArr.push({'time': t, 'value':sum / 5})
-                // }
             })
             this.ohlcSeries.setData(bars)
             this.volSeries.setData(volArr)
@@ -358,6 +403,9 @@ export default {
             }
         },
         onChartClick(param) {
+            if (this.menu.isShow) {
+                return
+            }
             const price = this.ohlcSeries.coordinateToPrice(param.point.y)
             const lastPrice = this.ohlcSeries.series().bars().last().value[3]
             switch(true) {
@@ -458,7 +506,7 @@ export default {
             order.outsideRth = true
             order.orderType = orderType
             order.action = action
-            order.totalQuantity = this.volume
+            order.totalQuantity = parseInt(this.volume)
 
             switch(orderType) {
                 case 'LMT':
@@ -499,7 +547,8 @@ export default {
                     height: this.$refs.barChart.clientHeight,
                     })
             }
-        }
+        },
+
     },
     beforeDestroy() {
         if (this.contract) {

@@ -109,15 +109,6 @@ const store = new Vuex.Store({
             const lastSession = arr.slice(sessionBeginIndex)
             const fristState = lastSession[0]
             const lastState = lastSession[lastSession.length - 1]
-            // const lastState = arr[arr.length -1]
-            // let fristState = arr[0]
- 
-            // for(let i = arr.length - 1; i >=0; i--){
-            //     if(arr[i][1] == 0){
-            //         fristState = arr[i]
-            //         break
-            //     }
-            // }
 
             return [lastState[0] - fristState[0], lastState[1] - fristState[1]]
 
@@ -194,19 +185,13 @@ const store = new Vuex.Store({
         },
 
         initFills(state, fills) {
-            fills.forEach((v, i) => fills[i].time = new Date(v.time).getTime() / 1000)
+            fills.forEach((v, i) => fills[i].time = new Date(v.time).getTime() / 1000 + 28800)
             fills.sort((a, b) => a.time - b.time)
             state.fillsList = fills
         },
 
         updateFill(state, fill) {
-            // for(let i in state.fillsList){
-            //     if(state.fillsList[i].execution.execId === fill.execution.execId){
-            //         state.fillsList.splice(i, 1, fill)
-            //         return
-            //     }
-            // }
-
+            fill.time = new Date(fill.time).getTime() / 1000 + 28800
             state.fillsList.push(fill)
         },
 

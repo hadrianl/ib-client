@@ -149,7 +149,7 @@ class IBWS:
                 break
         else:
             try:
-                bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', barSize, 'TRADES', useRTH=False, keepUpToDate=True), 10)
+                bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '2 D', barSize, 'TRADES', useRTH=False, keepUpToDate=True), 10)
             except asyncio.TimeoutError:
                 await ws.send(json.dumps({'error': '订阅K线超时：请确认数据连接是否中断'}))
                 return
@@ -298,6 +298,10 @@ class IBWS:
             trade.filledEvent += lambda t: bars.updateEvent.disconnect(dynamic_order)
             trade.cancelledEvent += lambda t: bars.updateEvent.disconnect(dynamic_order)
 
+    async def cancel_all(self, ws):
+        logger.info(f'{ws} request cancel all')
+        self.ib.reqGlobalCancel()
+    
     async def disconnect_ib(self, ws):
         self.ib.disconnect()
         self.ib.wrapper.reset()
@@ -385,6 +389,8 @@ class IBWS:
                 _to = msg.get('to')
                 if contract and _from and _to:
                     return self.get_klines(contract, _from, _to, ws)
+            elif msg['action'] == 'cancel_all':
+                return self.cancel_all(ws)
             elif msg['action'] == 'disconnect_ib':
                 return self.disconnect_ib(ws)
 
