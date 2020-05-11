@@ -2,7 +2,7 @@
     <v-data-table
     :height="height"
     :headers="headers"
-    :items="positions"
+    :items="portfolio"
     hide-default-footer
     class="elevation-1">
         <template v-slot:item.contract="{ item }">
@@ -21,6 +21,7 @@
             </v-tooltip>
         </template> 
     </v-data-table>
+
 </template>
 <script>
 // import Vue from 'vue'
@@ -38,8 +39,24 @@ export default {
                         value: 'position'
                     },
                     {
-                        text: 'avgCost',
-                        value: 'avgCost',
+                        text: 'marketPrice',
+                        value: 'marketPrice',
+                    },
+                    {
+                        text: 'marketValue',
+                        value: 'marketValue',
+                    },
+                    {
+                        text: 'averageCost',
+                        value: 'averageCost',
+                    },
+                    {
+                        text: 'unrealizedPNL',
+                        value: 'unrealizedPNL',
+                    },
+                    {
+                        text: 'realizedPNL',
+                        value: 'realizedPNL',
                     },
                     {
                         text: 'account',
@@ -54,8 +71,8 @@ export default {
 			},
         },
     computed: {
-        positions() {
-            return this.$store.state.positionsList
+        portfolio() {
+            return this.$store.state.portfolioList
         }
     },
     methods: {

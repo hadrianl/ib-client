@@ -91,8 +91,18 @@ class IBWS:
     async def handle_position_event(self):
         async for p in self.ib.positionEvent:
             pos = p._asdict()
-            pos['conId'] = pos.pop('contract').conId
+            # pos['conId'] = pos.pop('contract').conId
+            pos['contract'] = pos.pop('contract').dict()
             msg = {'t': 'position', 'data': pos}
+            for u in self.USER:
+                await u.send(json.dumps(msg))
+    
+    async def handle_portfolioItem_event(self):
+        async for p in self.ib.updatePortfolioEvent:
+            pfi = p._asdict()
+            # pfi['conId'] = pfi.pop('contract').conId
+            pfi['contract'] = pfi.pop('contract').dict()
+            msg = {'t': 'portfolioItem', 'data': pfi}
             for u in self.USER:
                 await u.send(json.dumps(msg))
 
@@ -117,8 +127,20 @@ class IBWS:
         msg = {'t': 'positions', 'data': []}
         for p in positions:
             pos = p._asdict()
-            pos['conId'] = pos.pop('contract').conId
+            # pos['conId'] = pos.pop('contract').conId
+            pos['contract'] = pos.pop('contract').dict()
             msg['data'].append(pos)
+
+        await ws.send(json.dumps(msg))
+
+    async def send_portfolio(self, ws):
+        portfolio = self.ib.portfolio()
+        msg = {'t': 'portfolio', 'data': []}
+        for p in portfolio:
+            pfi = p._asdict()
+            # pfi['conId'] = pfi.pop('contract').conId
+            pfi['contract'] = pfi.pop('contract').dict()
+            msg['data'].append(pfi)
 
         await ws.send(json.dumps(msg))
 
@@ -149,6 +171,8 @@ class IBWS:
                 break
         else:
             try:
+                if not contract.exchange: # contract in position or portfolio has no exchange
+                    contract.exchange = "HKFE"
                 bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '2 D', barSize, 'TRADES', useRTH=False, keepUpToDate=True), 10)
             except asyncio.TimeoutError:
                 await ws.send(json.dumps({'error': '订阅K线超时：请确认数据连接是否中断'}))
@@ -177,6 +201,8 @@ class IBWS:
                 break
         else:
             try:
+                if not contract.exchange: # contract in position or portfolio has no exchange
+                    contract.exchange = "HKFE"
                 ticker = self.ib.reqMktData(contract)
             except asyncio.TimeoutError:
                 await ws.send(json.dumps({'error': '订阅ticker超时：请确认数据连接是否中断'}))
@@ -234,7 +260,6 @@ class IBWS:
                 )
             )
 
-
     async def place_dynamic_order(self, contract, order: Order, options, ws):
         trigger_type = options['type']
         barSize = options.get('barSize', '1 min')
@@ -253,7 +278,7 @@ class IBWS:
                     break
             else:
                 try:       
-                    bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '1 D', barSize, 'TRADES', useRTH=False, keepUpToDate=True), 10)
+                    bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '2 D', barSize, 'TRADES', useRTH=False, keepUpToDate=True), 10)
                 except asyncio.TimeoutError:
                     await ws.send(json.dumps({'t': 'error', 'data': '无法下均线止损单：无法获取合约数据'}))
                     return
@@ -273,7 +298,7 @@ class IBWS:
                 order.auxPrice = stopPrice + triggerOffset
                 order.lmtPrice = order.auxPrice - lmtOffset
 
-            order.orderRef = f'{trigger_type}{period}{"+" if triggerOffset>=0 else ""}{triggerOffset}'
+            order.orderRef = f'{trigger_type}{period}{"+" if triggerOffset>=0 else ""}{triggerOffset}@{barSize}'
             trade = self.ib.placeOrder(contract, order)
 
             # dynamic_loop
@@ -331,6 +356,8 @@ class IBWS:
                 return self.send_trades(ws)
             elif msg['action'] == 'get_all_positions':
                 return self.send_positions(ws)
+            elif msg['action'] == 'get_all_portfolio':
+                return self.send_portfolio(ws)
             elif msg['action'] == 'get_all_fills':
                 return self.send_fills(ws)    
             elif msg['action'] == 'get_contracts':
@@ -424,5 +451,6 @@ class IBWS:
         self.ib.run(server)
         trade_handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
         position_handler = self.handle_position_event()
+        portfolioItem_handler = self.handle_portfolioItem_event()
         exec_handler = self.handle_exec_event()
-        self.ib.run(*trade_handlers, position_handler, exec_handler, self.global_check())
+        self.ib.run(*trade_handlers, position_handler, portfolioItem_handler, exec_handler, self.global_check())

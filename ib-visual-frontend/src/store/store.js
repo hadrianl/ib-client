@@ -25,6 +25,7 @@ const store = new Vuex.Store({
         contractsList: [],
         tradesList: [],
         positionsList: [],
+        portfolioList: [],
         fillsList: [],
         isConnected: false
     },
@@ -175,13 +176,28 @@ const store = new Vuex.Store({
 
         updatePosition(state, position) {
             for (let i in state.positionsList){
-                if (state.positionsList[i].conId === position.conId){
+                if (state.positionsList[i].contract.conId === position.contract.conId){
                     state.positionsList.splice(i, 1, position)
                         return
                     }
                 }
     
             state.positionsList.push(position)
+        },
+
+        initPortfolio(state, portfolio) {
+            state.portfolioList = portfolio
+        },
+
+        updatePortfolio(state, portfolioItem) {
+            for (let i in state.portfolioList){
+                if (state.portfolioList[i].contract.conId === portfolioItem.contract.conId){
+                    state.portfolioList.splice(i, 1, portfolioItem)
+                        return
+                    }
+                }
+    
+            state.portfolioList.push(portfolioItem)
         },
 
         initFills(state, fills) {

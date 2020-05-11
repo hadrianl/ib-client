@@ -25,46 +25,53 @@ const vm = new Vue({
     store,
     router,
     mounted() {
-        var _this = this
+        // var _this = this
 
-        this.$ibws.on('open', function() {
-            _this.$store.commit('setConnectState', true)
-        })
-
-        this.$ibws.on('close', function() {
-            _this.$store.commit('setConnectState', false)
+        this.$ibws.on('open', () => {
+            this.$store.commit('setConnectState', true)
         })
 
-        this.$ibws.on('connect_sync', function(){
-            _this.$ibws.send({'action': "get_all_trades"})
-            _this.$ibws.send({'action': "get_all_positions"})
-            _this.$ibws.send({'action': "get_all_fills"})
+        this.$ibws.on('close', () => {
+            this.$store.commit('setConnectState', false)
         })
 
-        this.$ibws.on('trades', function (ts) {
-            _this.$store.commit('initTrades', ts)
+        this.$ibws.on('connect_sync', () => {
+            this.$ibws.send({'action': "get_all_trades"})
+            this.$ibws.send({'action': "get_all_portfolio"})
+            this.$ibws.send({'action': "get_all_positions"})
+            this.$ibws.send({'action': "get_all_fills"})
+        })
+
+        this.$ibws.on('trades', (ts) => {
+            this.$store.commit('initTrades', ts)
         })
         
-        this.$ibws.on('trade', function (t) {
-            _this.$store.commit('updateTrade', t) 
+        this.$ibws.on('trade', (t) => {
+            this.$store.commit('updateTrade', t) 
         })
         
-        this.$ibws.on('positions', function (ps) {
-            _this.$store.commit('initPositions', ps)
+        this.$ibws.on('positions', (ps) => {
+            this.$store.commit('initPositions', ps)
         })
         
-        this.$ibws.on('position', function (p) {
-            _this.$store.commit('updatePosition', p)
-            
+        this.$ibws.on('position', (p) => {
+            this.$store.commit('updatePosition', p)
+        })
+
+        this.$ibws.on('portfolio', (pf) => {
+            this.$store.commit('initPortfolio', pf)
         })
         
-        this.$ibws.on('fills', function (fs) {
-            _this.$store.commit('initFills', fs)
-            
+        this.$ibws.on('portfolioItem', (pfi) => {
+            this.$store.commit('updatePortfolio', pfi)
         })
         
-        this.$ibws.on('fill', function (f) {
-            _this.$store.commit('updateFill', f)
+        this.$ibws.on('fills', (fs) => {
+            this.$store.commit('initFills', fs)   
+        })
+        
+        this.$ibws.on('fill', (f) => {
+            this.$store.commit('updateFill', f)
             
         })
     },

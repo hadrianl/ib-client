@@ -77,15 +77,6 @@ export default {
                         console.log(search)
                         console.log(item)
                         return true
-                        // const status = item.status
-                        // switch(value){
-                        //     case 1:
-                        //         return ['Cancelled', 'ApiCancelled'].indexOf(status) == -1
-                        //     case 2:
-                        //         return ['Submitted', 'PreSubmitted'].indexOf(status) != -1
-                        //     case 3:
-                        //         return item.order.orderId > 0
-                        // }
                     },
                 },
                 {

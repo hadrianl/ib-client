@@ -1,34 +1,32 @@
 <template>
-    <!-- <div> -->
-        <v-autocomplete
-        :value="currentItem"
-        :items="itemsList"
-        :search-input.sync="search"
-        :success="hasContract"
-        @input="selectItem"
-        @click:clear="clearItem"
-        color="white"
-        hide-no-data
-        item-text= "symbol"
-        item-value="contract"
-        label="Contract"
-        placeholder="输入合约"
-        prepend-icon="mdi-ios-search"
-        chips
-        small-chips
-        deletable-chips
-        dense
-        outlined
-        clearable
-        hide-details="auto"
-        return-object>
-            <template v-slot:prepend>
-                <v-icon
-                :color="hasContract?'success':'error'"
-                >{{hasContract?'mdi-text-box-check-outline':'mdi-text-box-remove-outline'}}</v-icon>
-            </template>
-        </v-autocomplete>
-
+    <v-autocomplete
+    :value="currentItem"
+    :items="itemsList"
+    :search-input.sync="search"
+    :success="hasContract"
+    @input="selectItem"
+    @click:clear="clearItem"
+    color="white"
+    hide-no-data
+    item-text= "symbol"
+    item-value="contract"
+    label="Contract"
+    placeholder="输入合约"
+    prepend-icon="mdi-ios-search"
+    chips
+    small-chips
+    deletable-chips
+    dense
+    outlined
+    clearable
+    hide-details="auto"
+    return-object>
+        <template v-slot:prepend>
+            <v-icon
+            :color="hasContract?'success':'error'"
+            >{{hasContract?'mdi-text-box-check-outline':'mdi-text-box-remove-outline'}}</v-icon>
+        </template>
+    </v-autocomplete>
 </template>
 <script>
 import {Contract} from '../plugins/datastructure.js'
@@ -44,7 +42,7 @@ export default {
             const c = this.$store.state.currentContract
 
             if(!c) return null
-
+            console.log(c)
             return  {'symbol': c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4),
                     'contract': c,}
         },

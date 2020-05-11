@@ -84,7 +84,7 @@ export default {
                 triggerOffset: 0,
                 trigger: '',
                 triggerRules: [
-                    v => /ma\d+/i.test(v)
+                    v => /^(ma)(\d+)(@(1 min|\d+ mins))?$/i.test(v)
                 ],
                 offsetRules: [
                 ],
@@ -178,7 +178,7 @@ export default {
             this.action = undefined
         },
         getTriggerOptions() {
-            const ma_trigger_patt = /^(ma)(\d+)$/i
+            const ma_trigger_patt = /^(ma)(\d+)(@(1 min|\d+ mins))?$/i
             let trigger = this.trigger
             let ret = ma_trigger_patt.exec(trigger)
             let options = {}
@@ -188,9 +188,11 @@ export default {
                 switch (trigger_type) {
                     case 'MA': {
                         let period = Number(ret[2])
+                        let barSize = ret[4]
                         if (0 < period <= 120) {
                             options['type'] = trigger_type
                             options['period'] = period
+                            options['barSize'] = barSize
                             options['lmtOffset'] = parseInt(this.lmtOffset)
                             options['triggerOffset'] = parseInt(this.triggerOffset)
                         }

@@ -1,5 +1,6 @@
 <template>
     <v-container>
+        <v-row><v-text-field v-model="ticker.time" readonly disabled hide-details dense></v-text-field></v-row>
         <v-row><v-progress-linear v-model="askSizeRate" color='#00FF7F'></v-progress-linear></v-row>
         <v-row><v-btn :value="ticker.ask" color='#90EE90' block @click="attachPriceClick(ticker.ask)">ASK:{{ ticker.askSize }}@{{ ticker.ask }}</v-btn></v-row>
         <v-row><v-btn :value="ticker.last" color='#ADD8E6' block @click="attachPriceClick(ticker.last)">LAST:{{ ticker.lastSize }}@{{ ticker.last }}</v-btn></v-row>
