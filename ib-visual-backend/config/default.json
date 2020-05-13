@@ -1,0 +1,23 @@
+{
+    "StopLossOrder": {
+        "volume": 1,
+        "stopPrice": 0,
+        "offset": 5,
+        "orderRef": "",
+        "attachOffset": 120
+    },
+    "TrailStopOrder": {
+        "volume": 1,
+        "attachOffset": 60,
+        "trailStopPrice": 0,
+        "trailAmount": 0,
+        "lmtPriceOffset": 0,
+        "orderRef": ""
+    },
+    "MATriggerOrder": {
+        "volume": 1,
+        "lmtOffset": 0,
+        "triggerOffset": 0,
+        "trigger": "ma60"
+    }
+}

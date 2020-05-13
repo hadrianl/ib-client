@@ -24,19 +24,19 @@ export default {
             maStyles: {
                 5:  {
                     color: "#DC143C",
-                    background: "#D3D3D3",
+                    // background: "#696969",
                 },
                 10: {
-                    color: "#FFFF00",
-                    background: "#D3D3D3",
+                    color: "#FFC125",
+                    // background: "#696969",
                 },
                 30: {
                     color: "#C0FF3E",
-                    background: "#D3D3D3",
+                    // background: "#696969",
                 },
                 60: {
                     color: "#97FFFF",
-                    background: "#D3D3D3",
+                    // background: "#696969",
                 },
             }
         }

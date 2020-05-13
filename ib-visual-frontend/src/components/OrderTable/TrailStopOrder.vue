@@ -81,32 +81,34 @@
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
+import {DEFAULT_CONFIG} from '../../plugins/utils.js'
 export default {
     components:{
         // ContractItem
     },
     data() {
-			return {
-                action: undefined,
-				volume: 1,
-                attachPrice: 0,
-                attachOffset: 60,
-                cost: null,
-                trailStopPrice: 0,
-                trailAmount: 0,
-                lmtPriceOffset: 0,
-                orderRef: "",
-                priceRules: [
-                    v => v > 0,
-                ],
-                offsetRules: [
-                ],
-                valid: false,
-			};
-        },
+        return {
+            action: undefined,
+            volume: 1,
+            attachPrice: 0,
+            attachOffset: 60,
+            cost: null,
+            trailStopPrice: 0,
+            trailAmount: 0,
+            lmtPriceOffset: 0,
+            orderRef: "",
+            priceRules: [
+                v => v > 0,
+            ],
+            offsetRules: [
+            ],
+            valid: false,
+        }
+    },
     mounted() {
         this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
         this.$bus.$on('costReference', this.setOrderBaseOnCost)
+        Object.assign(this.$data, DEFAULT_CONFIG['TrailStopOrder'])
     },
     watch: {
         attachOffset(nVal) {
@@ -165,14 +167,16 @@ export default {
             var order = new Order()
             order.outsideRth = true
             order.orderType = 'TRAIL LIMIT'
-            // order.tif = 'GTC'
+            order.tif = 'GTC'
             order.trailStopPrice = parseInt(this.trailStopPrice)
             order.lmtPriceOffset = parseInt(this.lmtPriceOffset)
             order.auxPrice = parseInt(this.trailAmount)
             order.action = this.action
             order.totalQuantity = parseInt(this.volume)
             order.triggerMethod = 4
-            order.orderRef = this.orderRef
+            const ref = `trailsl-${order.totalQuantity}@^${order.trailStopPrice}->${order.auxPrice}[${order.lmtPriceOffset}]`
+            order.orderRef = ref + '-' +this.orderRef
+            this.orderRef = ''
             console.log({'action': 'place_order', 'contract': contract, 'order': order})
             this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
 
@@ -186,7 +190,7 @@ export default {
             this.trailStopPrice = cost[1]>0? avgCost - attachOffset:avgCost + attachOffset
             this.trailAmount = attachOffset
             this.action = cost[1]>0?"SELL":"BUY"
-            this.orderRef = `trailsl-${this.volume}@${avgCost}`
+            this.orderRef = `Cost<@${avgCost}>`
         },
         setOrderBaseOnAttachPrice(price) {
             if(!price) return
@@ -204,7 +208,7 @@ export default {
             const attachOffset = this.attachOffset
             this.trailStopPrice = this.action == 'BUY'? price + attachOffset: price - attachOffset
             this.trailAmount = attachOffset
-            this.orderRef = `trailsl-${this.volume}@${price}`
+            this.orderRef = `Cost<@${this.attachPrice}>`
         },
         reset() {
             this.volume = 1

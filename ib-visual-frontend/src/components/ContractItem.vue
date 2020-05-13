@@ -61,10 +61,6 @@ export default {
         }
     },
     mounted() {
-        // var _this = this
-        // this.$ibws.on('contract', function(c) {
-        //     _this.$store.commit('addContract', c)
-        // })
         this.$ibws.on('contract', c => this.$store.commit('addContract', c))
 
     },
@@ -88,11 +84,6 @@ export default {
             if (ret) {
                 let flag = true
                 this.itemsList.forEach( c => {if(c.symbol === ret[0]) {flag = false}})
-                    // function(c){
-                    //     if (c.symbol === ret[0]){
-                    //         flag = false
-                    //     }
-                    // })
 
                 if (flag){
                     var c = new Contract()

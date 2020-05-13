@@ -3,14 +3,18 @@
         <v-card ref="barCard" :color="colors.background">
             <v-toolbar dense flat :color="colors.background">
                 <v-btn-toggle v-model="barSize" rounded mandatory dense borderless dark class='period'>
-                    <v-btn value="1 min">1 min</v-btn>
-                    <v-btn value="3 mins">3 mins</v-btn>
-                    <v-btn value="5 mins">5 mins</v-btn>
-                    <v-btn value="10 mins">10 mins</v-btn>
-                    <v-btn value="15 mins">15 mins</v-btn>
+                <v-btn value="1 min">1 min</v-btn>
+                <v-btn value="3 mins">3 mins</v-btn>
+                <v-btn value="5 mins">5 mins</v-btn>
+                <v-btn value="10 mins">10 mins</v-btn>
+                <v-btn value="15 mins">15 mins</v-btn>
                 </v-btn-toggle>
                 <v-spacer></v-spacer>
                 <v-switch v-model="isTrail" label="Trail" dark dense hide-details></v-switch>
+                <v-btn-toggle v-model="action" rounded dense>
+                    <v-btn value="BUY" color="red">BUY</v-btn>
+                    <v-btn value="SELL" color="green">SELL</v-btn>
+                </v-btn-toggle>
                 <v-text-field 
                 v-model.number="volume" 
                 label="volume" 
@@ -19,6 +23,7 @@
                 :rules="volRules"
                 dense
                 outlined
+                style="max-width: 80px"
                 hide-details>
                 </v-text-field>
                 <v-text-field 
@@ -28,6 +33,7 @@
                 dark
                 outlined 
                 dense
+                style="max-width: 100px"
                 hide-details>
                     <template v-slot:prepend>
                         <v-icon
@@ -54,10 +60,6 @@
                             </v-list>
                         </v-menu>
                         <Legend :legend_bar="legend_bar" :legend_ma="legend_ma"></Legend>
-                        <v-btn-toggle v-model="action" rounded dense class="action">
-                            <v-btn value="BUY" color="red">BUY</v-btn>
-                            <v-btn value="SELL" color="green">SELL</v-btn>
-                        </v-btn-toggle>
                     </div>
                 </v-card-text>
             </v-responsive>
@@ -169,7 +171,7 @@ export default {
         this.ohlcSeries = this.chart.addCandlestickSeries()
         this.volSeries = this.chart.addHistogramSeries({base: 0, overlay: true})
         // this.maSeries = this.chart.addLineSeries()
-        let colors = {5: '#DC143C', 10: '#FFFF00', 30: '#C0FF3E', 60: '#97FFFF'}
+        let colors = {5: '#DC143C', 10: '#FFC125', 30: '#C0FF3E', 60: '#97FFFF'}
         for(let key in this.maSeries){
             this.maSeries[key] = this.chart.addLineSeries({
                 priceLineVisible: false, 
@@ -184,9 +186,9 @@ export default {
             }
         })
         this.ohlcSeries.applyOptions({
-            // upColor: '#6495ED',
-            // downColor: '#FF6347',
-            // borderVisible: false,
+            upColor: '#FF0000',
+            downColor: '#00FFFF',
+            borderVisible: false,
             wickVisible: true,
             // borderColor: '#000000',
             wickColor: '#FFFFFF',
@@ -329,7 +331,7 @@ export default {
                     break
                 }
                 
-            case 'STP LMT':
+            case 'STP LMT': case 'LIT':
                 {
                     let isPreSubmitted = t.orderStatus.status == 'PreSubmitted'
                     line_option = {
@@ -506,12 +508,14 @@ export default {
             order.outsideRth = true
             order.orderType = orderType
             order.action = action
+            order.tif = 'GTC'
             order.totalQuantity = parseInt(this.volume)
 
             switch(orderType) {
                 case 'LMT':
                     {
                         order.lmtPrice = parseInt(price)
+                        order.orderRef = `ct@${order.lmtPrice}`
                         break
                     }
                     
@@ -520,6 +524,7 @@ export default {
                         let offset = parseInt(action == 'BUY'?this.offset:-this.offset)
                         order.lmtPrice = parseInt(price)
                         order.auxPrice = order.lmtPrice + offset
+                        order.orderRef = `ct@${order.auxPrice}->${order.lmtPrice}`
                         break
                     }
                 case 'TRAIL LIMIT':
@@ -528,6 +533,7 @@ export default {
                         order.auxPrice = Math.round(Math.abs(lastPrice - price))
                         order.triggerMethod = 4
                         order.lmtPriceOffset = parseInt(this.offset)
+                        order.orderRef = `ct@^${order.trailStopPrice}->${order.auxPrice}[${order.lmtPrice}]`
                         break
                     }
                 default:

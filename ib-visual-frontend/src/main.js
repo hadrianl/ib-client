@@ -1,32 +1,18 @@
 import Vue from 'vue'
 import App from './App.vue'
-// import './plugins/view-design.js'
-// import './plugins/echarts.js'
 import './plugins/eventBus.js'
 import ibws from './plugins/websocket.js'
 import store from './store/store.js'
 import router from './router/router.js'
-// import echarts from 'echarts'
 import vuetify from './plugins/vuetify.js'
 
 Vue.config.productionTip = false
-// var ibws = new IBWebsocket('ws://localhost:6789')
-// Vue.$ibws = ibws
-// Vue.prototype.$ibws = ibws
 window.ibws = ibws
-// window.onload = function(){
-//     //去掉默认的contextmenu事件，否则会和右键事件同时出现。
-//     document.oncontextmenu = function(e){
-//         e.preventDefault();
-//     }
-// }
 
 const vm = new Vue({
     store,
     router,
     mounted() {
-        // var _this = this
-
         this.$ibws.on('open', () => {
             this.$store.commit('setConnectState', true)
         })
@@ -72,7 +58,6 @@ const vm = new Vue({
         
         this.$ibws.on('fill', (f) => {
             this.$store.commit('updateFill', f)
-            
         })
     },
     vuetify,

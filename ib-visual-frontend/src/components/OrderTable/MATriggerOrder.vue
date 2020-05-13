@@ -69,30 +69,29 @@
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
-// import ContractItem from '../ContractItem.vue'
-
+import {DEFAULT_CONFIG} from '../../plugins/utils.js'
 
 export default {
     components:{
         // ContractItem
     },
     data() {
-			return {
-                action: undefined,
-				volume: 1,
-                lmtOffset: 0,
-                triggerOffset: 0,
-                trigger: '',
-                triggerRules: [
-                    v => /^(ma)(\d+)(@(1 min|\d+ mins))?$/i.test(v)
-                ],
-                offsetRules: [
-                ],
-                valid: false,
-			};
-        },
+        return {
+            action: undefined,
+            volume: 1,
+            lmtOffset: 0,
+            triggerOffset: 0,
+            trigger: '',
+            triggerRules: [
+                v => /^(ma)(\d+)(@(1 min|\d+ mins))?$/i.test(v)
+            ],
+            offsetRules: [
+            ],
+            valid: false,
+        }
+    },
     mounted() {
-
+        Object.assign(this.$data, DEFAULT_CONFIG['MATriggerOrder'])
     },
     computed: {
         actionStyle() {
@@ -162,9 +161,9 @@ export default {
 
             
             var order = new Order()
-            order.orderType = 'STP LMT'
+            // order.orderType = 'STP LMT'
             order.outsideRth = true
-            // order.tif = 'GTC'
+            order.tif = 'GTC'
             order.action = this.action
             order.totalQuantity = parseInt(this.volume)
             console.log({'action': 'place_dynamic_order', 'contract': contract, 'order': order, 'options': {}})

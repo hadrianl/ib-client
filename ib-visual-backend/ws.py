@@ -22,15 +22,24 @@ import logging
 util.logToConsole()
 util.patchAsyncio()
 logger = logging.getLogger('ib-visual-backend')
-def convert(obj):
-    if isinstance(obj, (int, float)) or obj is None:
+
+def tree(obj):
+    """
+    Convert object to a tree of lists, dicts and simple values.
+    The result can be serialized to JSON.
+    """
+    if isinstance(obj, (bool, int, float, str, bytes)):
         return obj
+    elif isinstance(obj, (dt.date, dt.time)):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: tree(v) for k, v in obj.items()}
+    elif util.isnamedtupleinstance(obj):
+        return {f: tree(getattr(obj, f)) for f in obj._fields}
+    elif isinstance(obj, (list, tuple, set)):
+        return [tree(i) for i in obj]
     elif is_dataclass(obj):
-        return {field.name: convert(getattr(obj, field.name)) for field in fields(obj)}
-    elif isinstance(obj, List):
-        return [convert(o) for o in obj]
-    elif isinstance(obj, tuple):
-        return {k: convert(v) for k, v in zip(obj._fields, obj)}
+        return tree(util.dataclassNonDefaults(obj))
     else:
         return str(obj)
 
@@ -83,32 +92,26 @@ class IBWS:
 
         async for t in event:
             t.log = []
-            t = convert(t)
-            msg = {'t': 'trade', 'data': t}
+            t.fills = []
+            msg = {'t': 'trade', 'data': tree(t)}
             for u in self.USER:
                 await u.send(json.dumps(msg))
 
     async def handle_position_event(self):
         async for p in self.ib.positionEvent:
-            pos = p._asdict()
-            # pos['conId'] = pos.pop('contract').conId
-            pos['contract'] = pos.pop('contract').dict()
-            msg = {'t': 'position', 'data': pos}
+            msg = {'t': 'position', 'data': tree(p)}
             for u in self.USER:
                 await u.send(json.dumps(msg))
     
     async def handle_portfolioItem_event(self):
         async for p in self.ib.updatePortfolioEvent:
-            pfi = p._asdict()
-            # pfi['conId'] = pfi.pop('contract').conId
-            pfi['contract'] = pfi.pop('contract').dict()
-            msg = {'t': 'portfolioItem', 'data': pfi}
+            msg = {'t': 'portfolioItem', 'data': tree(p)}
             for u in self.USER:
                 await u.send(json.dumps(msg))
 
     async def handle_exec_event(self):
         async for _, fill in self.ib.execDetailsEvent:
-            msg = {'t': 'fill', 'data': convert(fill)}
+            msg = {'t': 'fill', 'data': tree(fill)}
             for u in self.USER:
                 await u.send(json.dumps(msg))
 
@@ -117,30 +120,20 @@ class IBWS:
         msg = {'t': 'trades', 'data': []}
         for t in trades:
             t.log = []
-            t = convert(t)
-            msg['data'].append(t)
+            t.fills = []
+            msg['data'].append(tree(t))
 
         await ws.send(json.dumps(msg))
 
     async def send_positions(self, ws):
         positions = self.ib.positions()
-        msg = {'t': 'positions', 'data': []}
-        for p in positions:
-            pos = p._asdict()
-            # pos['conId'] = pos.pop('contract').conId
-            pos['contract'] = pos.pop('contract').dict()
-            msg['data'].append(pos)
+        msg = {'t': 'positions', 'data': tree(positions)}
 
         await ws.send(json.dumps(msg))
 
     async def send_portfolio(self, ws):
         portfolio = self.ib.portfolio()
-        msg = {'t': 'portfolio', 'data': []}
-        for p in portfolio:
-            pfi = p._asdict()
-            # pfi['conId'] = pfi.pop('contract').conId
-            pfi['contract'] = pfi.pop('contract').dict()
-            msg['data'].append(pfi)
+        msg = {'t': 'portfolio', 'data': tree(portfolio)}
 
         await ws.send(json.dumps(msg))
 
@@ -148,13 +141,14 @@ class IBWS:
         try:
             contracts = await asyncio.wait_for(self.ib.qualifyContractsAsync(contract), 3)
             for c in contracts:
-                await ws.send(json.dumps({'t': 'contract', 'data': c.__dict__}))
+                await ws.send(json.dumps({'t': 'contract', 'data': tree(c)}))
         except asyncio.TimeoutError:
             await ws.send(json.dumps({'t': 'error', 'data': '查询合约超时'}))
 
     async def send_fills(self, ws):
         fills = self.ib.fills()
-        msg = {'t': 'fills', 'data': convert(fills)}
+        msg = {'t': 'fills', 'data': tree(fills)}
+
         await ws.send(json.dumps(msg))
   
     async def place_order(self, contract, order, ws):
@@ -239,7 +233,7 @@ class IBWS:
         await ws.send(json.dumps({
             't': 'bars_',
             'data': [{'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[:]]}))
- 
+
     def send_bar(self, bars, hasNewBar):
         d = bars[-1]
         conId = bars.contract.conId
@@ -272,7 +266,7 @@ class IBWS:
         logger.info(f'Place_dynamic_order: {contract.conId}  {options}')
         if trigger_type == 'MA':
             
-            for reqId, bs in self.ib.wrapper.reqId2Subscriber.items():
+            for _, bs in self.ib.wrapper.reqId2Subscriber.items():
                 if isinstance(bs, BarDataList) and bs.contract == contract and bs.barSizeSetting == barSize :
                     bars = bs
                     break
@@ -289,16 +283,26 @@ class IBWS:
             
             # init ma order
             ma = talib.MA(np.array([b.close for b in bars[-period-1:]]), period)
+            currentClose = bars[-1].close
             stopPrice = int(ma[-1])
             triggerOffset = int(triggerOffset)
+            
             if action == 'BUY':
                 order.auxPrice = stopPrice + triggerOffset
                 order.lmtPrice = order.auxPrice + lmtOffset
+                if currentClose < stopPrice:
+                    order.orderType = 'STP LMT'
+                else:
+                    order.orderType = 'LIT'
             elif action == 'SELL':
                 order.auxPrice = stopPrice + triggerOffset
                 order.lmtPrice = order.auxPrice - lmtOffset
+                if currentClose > stopPrice:
+                    order.orderType = 'STP LMT'
+                else:
+                    order.orderType = 'LIT'
 
-            order.orderRef = f'{trigger_type}{period}{"+" if triggerOffset>=0 else ""}{triggerOffset}@{barSize}'
+            order.orderRef = f'{trigger_type}{period}{"+" if triggerOffset>=0 else "-"}{triggerOffset}@{barSize}'
             trade = self.ib.placeOrder(contract, order)
 
             # dynamic_loop
@@ -420,8 +424,7 @@ class IBWS:
                 return self.cancel_all(ws)
             elif msg['action'] == 'disconnect_ib':
                 return self.disconnect_ib(ws)
-
-        
+      
     async def global_check(self): # check if there is no user and no processing event, if so , disconnect
         while True:
             await asyncio.sleep(120)

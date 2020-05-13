@@ -74,30 +74,32 @@
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
+import {DEFAULT_CONFIG} from '../../plugins/utils.js'
 export default {
     components:{
         // ContractItem
     },
     data() {
-			return {
-                action: undefined,
-				volume: 1,
-                stopPrice: 0,
-                offset: 5,
-                orderRef: "",
-                attachOffset: 60,
-                attachPrice: 0,
-                priceRules: [
-                    v => v > 0,
-                ],
-                offsetRules: [
-                ],
-                valid: false,
-			}
-        },
+        return {
+            action: undefined,
+            volume: 1,
+            stopPrice: 0,
+            offset: 5,
+            orderRef: "",
+            attachOffset: 60,
+            attachPrice: 0,
+            priceRules: [
+                v => v > 0,
+            ],
+            offsetRules: [
+            ],
+            valid: false,
+        }
+    },
     mounted() {
         this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
         this.$bus.$on('costReference', this.setOrderBaseOnCost)
+        Object.assign(this.$data, DEFAULT_CONFIG['StopLossOrder'])
     },
     watch: {
         attachOffset(nVal) {
@@ -175,12 +177,13 @@ export default {
             var order = new Order()
             order.outsideRth = true
             order.orderType = 'STP LMT'
-            // order.tif = 'GTC'
+            order.tif = 'GTC'
             order.lmtPrice = parseInt(this.limitPrice)
             order.auxPrice = parseInt(this.stopPrice)
             order.action = this.action
             order.totalQuantity = parseInt(this.volume)
-            order.orderRef = this.orderRef
+            const ref = `sl-${order.totalQuantity}@${order.auxPrice}->${order.lmtPrice}`
+            order.orderRef = ref + '-' + this.orderRef
             console.log({'action': 'place_order', 'contract': contract, 'order': order})
             this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
 
@@ -194,7 +197,7 @@ export default {
             const attachOffset = this.attachOffset
             this.stopPrice = cost[1]>0? avgCost - attachOffset:avgCost + attachOffset
             this.action = cost[1]>0?"SELL":"BUY"
-            this.orderRef = `sl-${this.volume}@${avgCost}`
+            this.orderRef = `Cost<@${avgCost}>`
         },
         setOrderBaseOnAttachPrice(price) {
             if(!price) return
@@ -210,6 +213,7 @@ export default {
             this.attachPrice = price
             const attachOffset = this.attachOffset
             this.stopPrice = this.action == 'BUY'? price + attachOffset: price - attachOffset
+            this.orderRef = `Attach<@${this.attachPrice}>`
 
         },
         reset() {

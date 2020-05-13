@@ -3,6 +3,7 @@
     <v-navigation-drawer
     v-model="drawer"
     :expand-on-hover="true"
+    dark
     app
     clipped>
       <v-list dense>
