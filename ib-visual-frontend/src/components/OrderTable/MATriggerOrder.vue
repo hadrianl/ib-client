@@ -69,7 +69,7 @@
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
-import {DEFAULT_CONFIG} from '../../plugins/utils.js'
+import {get_default_config} from '../../plugins/utils.js'
 
 export default {
     components:{
@@ -91,7 +91,7 @@ export default {
         }
     },
     mounted() {
-        Object.assign(this.$data, DEFAULT_CONFIG['MATriggerOrder'])
+        get_default_config.then((response) => {Object.assign(this.$data, response.data['MATriggerOrder'])})
     },
     computed: {
         actionStyle() {
@@ -175,6 +175,7 @@ export default {
             this.triggerOffset = 0
             this.lmtOffset = 0
             this.action = undefined
+            get_default_config.then((response) => {Object.assign(this.$data, response.data['MATriggerOrder'])})
         },
         getTriggerOptions() {
             const ma_trigger_patt = /^(ma)(\d+)(@(1 min|\d+ mins))?$/i

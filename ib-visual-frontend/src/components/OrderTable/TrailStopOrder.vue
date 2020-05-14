@@ -81,7 +81,7 @@
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
-import {DEFAULT_CONFIG} from '../../plugins/utils.js'
+import {get_default_config} from '../../plugins/utils.js'
 export default {
     components:{
         // ContractItem
@@ -108,7 +108,7 @@ export default {
     mounted() {
         this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
         this.$bus.$on('costReference', this.setOrderBaseOnCost)
-        Object.assign(this.$data, DEFAULT_CONFIG['TrailStopOrder'])
+        get_default_config.then((response) => {Object.assign(this.$data, response.data['TrailStopOrder'])})
     },
     watch: {
         attachOffset(nVal) {
@@ -218,6 +218,7 @@ export default {
             this.action = undefined
             this.attachPrice = 0
             this.attachOffset = 60
+            get_default_config.then((response) => {Object.assign(this.$data, response.data['TrailStopOrder'])})
         },
 		}
 }
