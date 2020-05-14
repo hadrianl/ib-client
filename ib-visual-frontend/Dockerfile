@@ -10,3 +10,4 @@ From nginx:alpine as production
 RUN mkdir /app
 COPY --from=builder /app/dist /app
 COPY nginx.conf /etc/nginx/nginx.conf
+VOLUME /app/config

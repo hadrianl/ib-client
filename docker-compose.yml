@@ -20,6 +20,6 @@ services:
     image: hadrianl/ib-client_frontend
     ports:
       - "8080:8080"
+    volumes: 
+      - ./config:/app/config/
     restart: "on-failure"
-  
-

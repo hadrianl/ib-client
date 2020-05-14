@@ -4,7 +4,7 @@
         "stopPrice": 0,
         "offset": 5,
         "orderRef": "",
-        "attachOffset": 60
+        "attachOffset": 100
     },
     "TrailStopOrder": {
         "volume": 1,
@@ -18,7 +18,7 @@
         "volume": 1,
         "lmtOffset": 0,
         "triggerOffset": 0,
-        "trigger": ""
+        "trigger": "ma60"
     }
 }
 

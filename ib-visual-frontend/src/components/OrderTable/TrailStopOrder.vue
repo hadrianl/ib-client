@@ -76,12 +76,10 @@
             </v-list-item>
         </v-list>
     </v-form>
-
-
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'
-import {get_default_config} from '../../plugins/utils.js'
+import axios from '../../plugins/axios.js'
 export default {
     components:{
         // ContractItem
@@ -108,7 +106,7 @@ export default {
     mounted() {
         this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
         this.$bus.$on('costReference', this.setOrderBaseOnCost)
-        get_default_config.then((response) => {Object.assign(this.$data, response.data['TrailStopOrder'])})
+        axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['TrailStopOrder'])})
     },
     watch: {
         attachOffset(nVal) {
@@ -218,7 +216,7 @@ export default {
             this.action = undefined
             this.attachPrice = 0
             this.attachOffset = 60
-            get_default_config.then((response) => {Object.assign(this.$data, response.data['TrailStopOrder'])})
+            axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['TrailStopOrder'])})
         },
 		}
 }
