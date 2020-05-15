@@ -94,7 +94,7 @@ export default {
         markers() {
             let arr = []
             this.fills.forEach(f => arr.push({
-                        time: f.time,
+                        time: f.time - 60,
                         position: f.execution.side==='BOT'?'belowBar':'aboveBar',
                         shape: f.execution.side==='BOT'?'arrowUp':'arrowDown',
                         color: f.execution.side==='BOT'?'red':'green',

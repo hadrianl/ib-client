@@ -57,6 +57,7 @@ export default {
         },
         attachPriceClick(price) {
             this.$bus.$emit('attachPrice', price)
+            this.$emit('attach-price', price)
         }
     },
     beforeDestroy() {

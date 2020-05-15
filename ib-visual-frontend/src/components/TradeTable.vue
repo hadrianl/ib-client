@@ -3,18 +3,28 @@
     :height="height"
     :headers="headers"
     :items="trades"
+    item-key="order.permId"
+    :expanded.sync="expandedTrade"
+    single-expand
+    show-expand
     sort-by="permId"
     hide-default-footer
     class="elevation-1"
     >
-        <template v-slot:item.handle="{ item }">
+        <template v-slot:expanded-item="{ headers, item }">
+            <td v-for="f in item.fills" :key="f.execution.time" :colspan="headers.length">
+                {{ f.execution.time.substr(0, 19) }}-----<strong>{{ f.execution.shares }}</strong>@<strong>{{ f.execution.price}}</strong> ${{ f.commissionReport.commission + f.commissionReport.currency}}[{{f.execution.execId}}]
+            </td>
+        </template>
+        <template v-slot:item.operation="{ item }">
             <v-btn 
-            v-if="isDone(item.status)"
+            v-if="isDone(item.orderStatus.status)"
             @click="cancelOrder(item.order)"
             color="error"
             small
             >Cancel</v-btn>
         </template>
+        
     </v-data-table>
 </template>
 
@@ -23,69 +33,80 @@
 export default {
     data() {
         return {
+            expandedTrade: [],
             headers : [
                 {
+                    text: '', 
+                    value: 'data-table-expand',
+                    divider: true,
+                },
+                {
                     text: 'permId',
-                    value: 'permId',
+                    value: 'order.permId',
+                    align: 'center',
                     sortable: true,
                     sort: (a, b) => b-a
                 },
                 {
                     text: 'c',
-                    value: 'clientId',
+                    value: 'order.clientId',
+                    align: 'center',
                 },
                 {
                     text: 'orderId',
-                    value: 'orderId',
-                    align: 'start',
+                    value: 'order.orderId',
+                    divider: true,
+                    align: 'center',
                 },
                 {
                     text: 'symbol',
-                    value: 'symbol',
+                    value: 'contract.localSymbol',
+                    align: 'center',
                 },
                 {
                     text: 'action',
-                    value: 'action',
+                    value: 'order.action',
+                    align: 'center',
                 },
                 {
-                    text: 'filledQty',
-                    value: 'filledQty',
+                    text: 'filled',
+                    value: 'order.filledQuantity',
+                    align: 'end',
                 },
                 {
-                    text: 'totalQty',
-                    value: 'totalQty',
+                    text: 'remaining',
+                    value: 'orderStatus.remaining',
+                    align: 'end',
+                    divider: true,
                 },
                 {
                     text: 'lmtPrice',
-                    value: 'lmtPrice',   
+                    value: 'order.lmtPrice',
+                    align: 'end',
                 },
                 {
                     text: 'auxPrice',
-                    value: 'auxPrice',
+                    value: 'order.auxPrice',
+                    align: 'end',
                 },
                 {
                     text: 'orderType',
-                    value: 'orderType',
+                    value: 'order.orderType',
+                    align: 'center',
                 },
                 {
                     text: 'status',
-                    value: 'status',
-                    filterable: true,
-                    align: 'center',
-                    filter: (value, search, item) => {
-                        console.log(value)
-                        console.log(search)
-                        console.log(item)
-                        return true
-                    },
+                    value: 'orderStatus.status',
+                    divider: true,
                 },
                 {
                     text: 'orderRef',
-                    value: 'orderRef',
+                    value: 'order.orderRef',
+                    align: 'center',
                 },
                 {
-                    text: 'handle',
-                    value: 'handle',
+                    text: 'operation',
+                    value: 'operation',
                     sortable: false,
                 }
             ]
@@ -102,26 +123,7 @@ export default {
     },
     computed: {
         trades() {
-            let trades = []
-            this.$store.getters.availableTradesList.forEach(v => {
-                trades.push({
-                    permId: v.order.permId,
-                    clientId: v.order.clientId,
-                    orderId: v.order.orderId,
-                    symbol: v.contract.symbol + v.contract.lastTradeDateOrContractMonth.substr(2, 4),
-                    action: v.order.action,
-                    filledQty: v.order.filledQuantity == Number.MAX_VALUE?0:v.order.filledQuantity,
-                    totalQty: v.order.totalQuantity,
-                    lmtPrice: v.order.lmtPrice,
-                    auxPrice: v.order.auxPrice,
-                    orderType: v.order.orderType,
-                    status: v.orderStatus.status,
-                    orderRef: v.order.orderRef,
-                    order: v.order,
-                })
-            })
-            console.log(trades)
-            return trades
+            return this.$store.getters.availableTradesList
         }
     },
     methods: {

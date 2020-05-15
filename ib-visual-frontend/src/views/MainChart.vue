@@ -1,5 +1,5 @@
 <template>
-	<v-container class='mt-1 pt-1'>
+	<v-container class='ma-auto pa-auto' justify="space-between">
 		<v-row align="stretch" justify="space-between" no-gutters>
 			<v-col cols="8">
 				<v-row>

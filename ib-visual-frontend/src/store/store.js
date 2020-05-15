@@ -45,6 +45,9 @@ const store = new Vuex.Store({
             }
             return state.tradesList.filter(t => t.contract.conId == state.currentContract.conId)
         },
+        // currentAvailableTradesList: (state, getters) => {
+        //     return getters.currenTradesList.filter(t => ['Cancelled', 'ApiCancelled'].indexOf(t.orderStatus.status) == -1)
+        // },
         currentOpenCost: (state, getters) => {
             const fills = getters.currentFillsList
             if(!state.currentContract || fills.length == 0){

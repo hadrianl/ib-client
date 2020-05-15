@@ -59,7 +59,7 @@
             </v-list-item>
             <v-list-item>
                 <v-row justify="space-around">
-                    <v-col cols="8">
+                    <v-col cols="7">
                         <v-btn 
                         block
                         @click="insertOrder()" 

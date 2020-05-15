@@ -9,7 +9,7 @@ import signal
 import functools
 import websockets
 import asyncio
-from typing import Set, List, Dict, NamedTuple
+from typing import Set, List, Dict, NamedTuple, Optional
 from dataclasses import is_dataclass, fields
 from collections import defaultdict
 import contextlib
@@ -28,7 +28,7 @@ def tree(obj):
     Convert object to a tree of lists, dicts and simple values.
     The result can be serialized to JSON.
     """
-    if isinstance(obj, (bool, int, float, str, bytes)):
+    if isinstance(obj, (bool, int, float, str, bytes, )):
         return obj
     elif isinstance(obj, (dt.date, dt.time)):
         return obj.isoformat()
@@ -41,7 +41,7 @@ def tree(obj):
     elif is_dataclass(obj):
         return tree(util.dataclassNonDefaults(obj))
     else:
-        return str(obj)
+        return obj if obj is None else str(obj)
 
 class IBWS:
     def __init__(self, host, port):
@@ -54,7 +54,7 @@ class IBWS:
         self.bar2ws: Dict[BarDataList, Set] = {}
         self.loop = asyncio.get_event_loop()
 
-    async def register(self, user):
+    async def register(self, user: websockets.WebSocketServerProtocol):
         self.USER.add(user)
         logger.info(f'Register User: {user}')
         if not self.ib.isConnected():
@@ -62,7 +62,7 @@ class IBWS:
 
         await user.send(json.dumps({'t': 'connect_sync'}))
 
-    async def unregiseter(self, user):
+    async def unregiseter(self, user: websockets.WebSocketServerProtocol):
         self.USER.remove(user)
         logger.info(f'Unregister User: {user}')
         # TODO: maybe there is a better solution
@@ -84,11 +84,8 @@ class IBWS:
                     if t.contract.conId == conId:
                         t.updateEvent -= self.send_ticker
 
-    async def handle_trade_event(self, event_name):
+    async def handle_trade_event(self, event_name: str):
         event = getattr(self.ib, event_name)
-
-        if not event:
-            return
 
         async for t in event:
             t.log = []
@@ -115,29 +112,29 @@ class IBWS:
             for u in self.USER:
                 await u.send(json.dumps(msg))
 
-    async def send_trades(self, ws):
+    async def send_trades(self, ws: websockets.WebSocketServerProtocol):
         trades = self.ib.trades()
         msg = {'t': 'trades', 'data': []}
         for t in trades:
             t.log = []
-            t.fills = []
+            # t.fills = []
             msg['data'].append(tree(t))
 
         await ws.send(json.dumps(msg))
 
-    async def send_positions(self, ws):
+    async def send_positions(self, ws: websockets.WebSocketServerProtocol):
         positions = self.ib.positions()
         msg = {'t': 'positions', 'data': tree(positions)}
 
         await ws.send(json.dumps(msg))
 
-    async def send_portfolio(self, ws):
+    async def send_portfolio(self, ws: websockets.WebSocketServerProtocol):
         portfolio = self.ib.portfolio()
         msg = {'t': 'portfolio', 'data': tree(portfolio)}
 
         await ws.send(json.dumps(msg))
 
-    async def send_contracts(self, contract, ws):
+    async def send_contracts(self, contract: Contract, ws: websockets.WebSocketServerProtocol):
         try:
             contracts = await asyncio.wait_for(self.ib.qualifyContractsAsync(contract), 3)
             for c in contracts:
@@ -145,20 +142,20 @@ class IBWS:
         except asyncio.TimeoutError:
             await ws.send(json.dumps({'t': 'error', 'data': '查询合约超时'}))
 
-    async def send_fills(self, ws):
+    async def send_fills(self, ws: websockets.WebSocketServerProtocol):
         fills = self.ib.fills()
         msg = {'t': 'fills', 'data': tree(fills)}
 
         await ws.send(json.dumps(msg))
   
-    async def place_order(self, contract, order, ws):
+    async def place_order(self, contract: Contract, order: Order, ws: websockets.WebSocketServerProtocol):
         _ = self.ib.placeOrder(contract, order)
 
     async def cancel_order(self, order, ws):
         self.ib.cancelOrder(order)
 
-    async def sub_klines(self, contract, barSize, ws):
-        logger.info(f'sub_klines:{contract.conId}')
+    async def sub_klines(self, contract: Contract, barSize: str, ws: websockets.WebSocketServerProtocol):
+        # logger.info(f'sub_klines:{contract.conId}')
         for _, bs in self.ib.wrapper.reqId2Subscriber.items():
             if isinstance(bs, BarDataList) and bs.contract == contract and bs.barSizeSetting == barSize:
                 bars = bs
@@ -181,14 +178,14 @@ class IBWS:
         if self.send_bar not in bars.updateEvent:
             bars.updateEvent += self.send_bar
 
-    async def unsub_klines(self, contract, barSize, ws):
+    async def unsub_klines(self, contract: Contract, barSize: str, ws: websockets.WebSocketServerProtocol):
         conId = contract.conId
-        logger.info(f'unsub_klines:{conId}')
+        # logger.info(f'unsub_klines:{conId}')
         if ws in self.BAR2USER[(conId, barSize)]:
             self.BAR2USER[(conId, barSize)].remove(ws)
 
-    async def sub_ticker(self, contract, ws):
-        logger.info(f'sub_ticker:{contract.conId}')
+    async def sub_ticker(self, contract: Contract, ws: websockets.WebSocketServerProtocol):
+        # logger.info(f'sub_ticker:{contract.conId}')
         for _, t in self.ib.wrapper.reqId2Ticker.items():
             if t.contract == contract:
                 ticker: Ticker = t
@@ -207,13 +204,13 @@ class IBWS:
         if self.send_ticker not in ticker.updateEvent:
             ticker.updateEvent += self.send_ticker
     
-    async def unsub_ticker(self, contract, ws):
+    async def unsub_ticker(self, contract: Contract, ws: websockets.WebSocketServerProtocol):
         conId = contract.conId
-        logger.info(f'unsub_ticker:{conId}')
+        # logger.info(f'unsub_ticker:{conId}')
         if ws in self.TICK2USER[conId]:
             self.TICK2USER[conId].remove(ws)
    
-    async def get_klines(self, contract, _from, _to, ws):
+    async def get_klines(self, contract: Contract, _from: int, _to: int, ws: websockets.WebSocketServerProtocol):
         _to = dt.datetime.fromtimestamp(_to) - dt.timedelta(hours=8)
         _from = dt.datetime.fromtimestamp(_from) - dt.timedelta(hours=8)
         conId = contract.conId
@@ -234,7 +231,7 @@ class IBWS:
             't': 'bars_',
             'data': [{'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': conId} for d in bars[:]]}))
 
-    def send_bar(self, bars, hasNewBar):
+    def send_bar(self, bars: BarDataList, hasNewBar: bool):
         d = bars[-1]
         conId = bars.contract.conId
         barSize = bars.barSizeSetting
@@ -243,7 +240,7 @@ class IBWS:
                 't': 'bar',
                 'data': {'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
 
-    def send_ticker(self, ticker):
+    def send_ticker(self, ticker: Ticker):
         conId = ticker.contract.conId
         for u in self.TICK2USER[conId]:
             self.ib.run(
@@ -254,7 +251,7 @@ class IBWS:
                 )
             )
 
-    async def place_dynamic_order(self, contract, order: Order, options, ws):
+    async def place_dynamic_order(self, contract, order: Order, options: Dict, ws: websockets.WebSocketServerProtocol):
         trigger_type = options['type']
         barSize = options.get('barSize', '1 min')
         lmtOffset = options['lmtOffset']
@@ -327,11 +324,11 @@ class IBWS:
             trade.filledEvent += lambda t: bars.updateEvent.disconnect(dynamic_order)
             trade.cancelledEvent += lambda t: bars.updateEvent.disconnect(dynamic_order)
 
-    async def cancel_all(self, ws):
+    async def cancel_all(self, ws: websockets.WebSocketServerProtocol):
         logger.info(f'{ws} request cancel all')
         self.ib.reqGlobalCancel()
     
-    async def disconnect_ib(self, ws):
+    async def disconnect_ib(self, ws: websockets.WebSocketServerProtocol):
         self.ib.disconnect()
         self.ib.wrapper.reset()
         self.BAR2USER.clear()
@@ -340,7 +337,7 @@ class IBWS:
         for u in user:
             await u.close(1001)
 
-    async def middleware(self, ws, path):
+    async def middleware(self, ws: websockets.WebSocketServerProtocol, path: str):
         await self.register(ws)
         try:
             async for message in ws:
@@ -354,7 +351,7 @@ class IBWS:
         finally:
             await self.unregiseter(ws)
 
-    def recvMsg2Handler(self, msg, ws):
+    def recvMsg2Handler(self, msg: Dict, ws: websockets.WebSocketServerProtocol):
         if isinstance(msg, Dict) and msg.get('action'):
             if msg['action'] == 'get_all_trades':
                 return self.send_trades(ws)
@@ -428,10 +425,10 @@ class IBWS:
     async def global_check(self): # check if there is no user and no processing event, if so , disconnect
         while True:
             await asyncio.sleep(120)
-            print('USER:', self.USER)
-            print('BAR2USER:', self.BAR2USER)
-            print("TICK2USER:", self.TICK2USER)
-            print('bars', [{reqId: sub.updateEvent} for reqId, sub in self.ib.wrapper.reqId2Subscriber.items()])
+            # print('USER:', self.USER)
+            # print('BAR2USER:', self.BAR2USER)
+            # print("TICK2USER:", self.TICK2USER)
+            # print('bars', [{reqId: sub.updateEvent} for reqId, sub in self.ib.wrapper.reqId2Subscriber.items()])
             if self.USER:  # check if has user
                 continue
 

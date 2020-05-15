@@ -24,7 +24,8 @@
         <template v-slot:prepend>
             <v-icon
             :color="hasContract?'success':'error'"
-            >{{hasContract?'mdi-text-box-check-outline':'mdi-text-box-remove-outline'}}</v-icon>
+            >{{hasContract?'mdi-text-box-check-outline':'mdi-text-box-remove-outline'}}
+            </v-icon>
         </template>
     </v-autocomplete>
 </template>
@@ -68,12 +69,14 @@ export default {
         selectItem(item) {
             if(item){
                 this.$store.commit('selectContract', item.contract)
+                this.$emit('select-contract', item.contract)
             }
 
         },
         clearItem() {
             console.log('clearItem')
             this.$store.commit('clearContract')
+            this.$emit('clear-contract')
         },
 
 
