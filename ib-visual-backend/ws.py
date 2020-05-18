@@ -17,6 +17,7 @@ import json
 import talib
 import numpy as np
 import datetime as dt
+from dateutil import parser
 import logging
 
 util.logToConsole()
@@ -210,19 +211,12 @@ class IBWS:
         if ws in self.TICK2USER[conId]:
             self.TICK2USER[conId].remove(ws)
    
-    async def get_klines(self, contract: Contract, _from: int, _to: int, ws: websockets.WebSocketServerProtocol):
-        _to = dt.datetime.fromtimestamp(_to) - dt.timedelta(hours=8)
-        _from = dt.datetime.fromtimestamp(_from) - dt.timedelta(hours=8)
+    async def get_klines(self, contract: Contract, end: str, barSize: str, duration: str, ws: websockets.WebSocketServerProtocol):
         conId = contract.conId
-        d = _to - _from
-
-        if d < dt.timedelta(days=1):
-            durationStr = f'{d.seconds} S'
-        else:
-            durationStr = f'{d.days} D'
+        end = parser.parse(end)
 
         try:
-            bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, _to, durationStr, '1 min', 'TRADES', useRTH=False, keepUpToDate=False), 10)
+            bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, end, duration, barSize, 'TRADES', useRTH=False, keepUpToDate=False), 10)
         except asyncio.TimeoutError:
             await ws.send(json.dumps({'error': '获取K线超时：请确认数据连接是否中断'}))
             return
@@ -413,10 +407,12 @@ class IBWS:
                     return self.unsub_ticker(contract, ws)
             elif msg['action'] == 'get_klines':
                 contract = msg.get('contract')
-                _from = msg.get('from')
-                _to = msg.get('to')
-                if contract and _from and _to:
-                    return self.get_klines(contract, _from, _to, ws)
+                duration = msg.get('duration', '1 D')
+                end = msg.get('end')
+                barSize = msg.get('barSize', '1 min')
+                if contract and end:
+                    contract = Contract(**contract)
+                    return self.get_klines(contract, end, barSize, duration, ws)
             elif msg['action'] == 'cancel_all':
                 return self.cancel_all(ws)
             elif msg['action'] == 'disconnect_ib':

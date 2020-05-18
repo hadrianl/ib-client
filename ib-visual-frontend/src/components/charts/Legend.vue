@@ -7,7 +7,7 @@
         <div style="color:#FFFFFF">Close:  <strong :style="ohlcLegendStyle">{{ legend_bar["close"] }}</strong></div>
         <div style="color:#FFFFFF">Volume: <strong :style="ohlcLegendStyle">{{ legend_bar["volume"] }}</strong></div>
         <div style="color:#FFFFFF">
-            <inline v-for="(v, p) in legend_ma" :key="p">
+            <inline v-for="(v, p) in legend_ma" :key="p" :name="p">
                 ma{{p}}: <strong :style="maStyles[p]">{{ v?v.toFixed(1):v }}</strong> 
             </inline>
         </div>    

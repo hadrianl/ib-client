@@ -44,7 +44,10 @@
             </v-toolbar>
             <v-responsive :aspect-ratio="16/9">
                 <v-card-text v-resize="onResize">
-                    <div ref="barChart" class="ChartContainer" id="bar-chart" @contextmenu.prevent="showMenu">
+                    <div ref="barChart" class="ChartContainer" id="bar-chart" 
+                    @contextmenu.prevent="showMenu"
+                    @mousedown="chart.subscribeVisibleTimeRangeChange(onTimeRangeChange)"
+                    @mouseup="chart.unsubscribeVisibleTimeRangeChange(onTimeRangeChange)">
                         <v-menu
                             v-model="menu.isShow"
                             :position-x="menu.x"
@@ -60,6 +63,18 @@
                             </v-list>
                         </v-menu>
                         <Legend :legend_bar="legend_bar" :legend_ma="legend_ma"></Legend>
+                        <v-btn
+                        id="forefront"
+                        absolute
+                        dark
+                        fab
+                        bottom
+                        left
+                        color="pink"
+                        @click="gotoForefront"
+                        >
+                        <v-icon>mdi-menu-right</v-icon>
+                        </v-btn>
                     </div>
                 </v-card-text>
             </v-responsive>
@@ -108,6 +123,7 @@ export default {
     },
     data() {
         return {
+            bars: [],
             chart: null,
             ohlcSeries: null,
             volSeries: null,
@@ -213,6 +229,7 @@ export default {
         this.chart.subscribeClick(this.onChartClick)
         this.chart.subscribeCrosshairMove(this.onCrosshairMove)
         // this.chart.subscribeVisibleTimeRangeChange(this.onTimeRangeChange)
+        // this.chart.unsubscribeVisibleTimeRangeChange(this.onTimeRangeChange)
 
         this.$ibws.on('trade', this.handleTrade)
 
@@ -225,7 +242,8 @@ export default {
         if (this.contract){
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
         }
-
+        console.log(this)
+        console.log(this.ohlcSeries)
     },
     watch: {
         contract(newCon, oldCon) {
@@ -366,12 +384,15 @@ export default {
                 }
         },
         handleBars(bars) {
+            this.bars = bars
+            let barsArr = []
             let volArr = []
             let maArr = {5: [], 10: [], 30: [], 60: []}
             bars.forEach((element, index, arr) => {
                 let t = new Date(element.time).getTime() / 1000 + 28800
-                bars[index].time = t
-                volArr.push({'time': t, 'value': element.volume})
+                let bar = Object.assign({}, element, {'time': t})
+                barsArr.push(bar)
+                volArr.push({'time': t, 'value': bar.volume})
                 for(let key in maArr) {
                     if(index < key){
                         maArr[key].push({'time': t, 'value': NaN})
@@ -382,7 +403,7 @@ export default {
                     }
                 }
             })
-            this.ohlcSeries.setData(bars)
+            this.ohlcSeries.setData(barsArr)
             this.volSeries.setData(volArr)
             for(let key in this.maSeries) {
                 this.maSeries[key].setData(maArr[key])
@@ -391,9 +412,14 @@ export default {
             // this.trades.forEach(t => this.handleTrade(t))
         },
         handleBar(bar) {
+            if (bar.time == this.bars[this.bars.length - 1].time) {
+                Object.assign(this.bars[this.bars.length - 1], bar)
+            }else{
+                this.bars.push(bar)
+            }
+
             const t = new Date(bar.time).getTime() / 1000 + 28800
-            bar.time = t
-            this.ohlcSeries.update(bar)
+            this.ohlcSeries.update(Object.assign({}, bar, {time: t}))
             this.volSeries.update({'time': t, 'value': bar.volume})
             for(let key in this.maSeries) {
                 let sum = 0
@@ -403,6 +429,19 @@ export default {
                 }
                 this.maSeries[key].update({'time': t, 'value': sum / key})
             }
+        },
+        extendBarsBackWard(bars) {
+            if (bars[bars.length - 1].time >= this.bars[0].time){
+                this.$bus.$emit('notice', {
+                    color: 'error',
+                    title: 'Extend bars backward Failed!',
+                    content: `backward last time:${bars[bars.length - 1].time} -> origin last time${this.bars[0].time}`,
+                    timeout: 30000
+                    })
+                return
+            }
+
+            this.handleBars(bars.concat(this.bars))
         },
         onChartClick(param) {
             if (this.menu.isShow) {
@@ -493,10 +532,18 @@ export default {
             }
         },
         onTimeRangeChange(param) {
-            setTimeout(function(){
-                console.log(param.from)
-                console.log(param.to)
-            }, 10000)
+            if (this.ohlcSeries.series().bars().first().time.timestamp == param.from){
+                this.$ibws.once('bars_', this.extendBarsBackWard)
+                this.$ibws.send({action: 'get_klines', 'contract': this.contract, 'duration': '1 D', 'end': new Date((param.from - 28800) * 1000), 'barSize': this.barSize})
+            }
+        },
+        gotoForefront() {
+            const visibleRange = this.chart.timeScale().getVisibleRange()
+            const range = visibleRange.to - visibleRange.from
+            const forefrontTS = this.ohlcSeries.series().bars().last().time.timestamp
+
+            this.chart.timeScale().setVisibleRange({from: forefrontTS - range, to: forefrontTS})
+            
         },
         sendOrder(orderType, price, action, lastPrice) {
             // if no action , notice error
@@ -593,5 +640,17 @@ export default {
     .action-active {
     opacity: 1;
     color: 'blue';
+    }
+
+    #forefront {
+    bottom: 4em;
+    left: 1em;
+    opacity: .5;
+    transition: opacity .2s cubic-bezier(0.005, 1, 0.22, 1);
+    display: flex;
+    flex-direction: column;
+    &:hover {
+        opacity: 1;
+    }
     }
 </style>
