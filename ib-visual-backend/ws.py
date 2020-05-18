@@ -6,6 +6,8 @@
 
 from ib_insync import *
 import signal
+import os
+import sys
 import functools
 import websockets
 import asyncio
@@ -441,6 +443,9 @@ class IBWS:
             if close_flag:
                 self.ib.disconnect()
                 self.ib.wrapper.reset()
+
+    def handle_sigterm(self):
+        self.loop.stop()
      
     def run(self):
         server = websockets.serve(self.middleware, '0.0.0.0', 6789)
@@ -449,4 +454,11 @@ class IBWS:
         position_handler = self.handle_position_event()
         portfolioItem_handler = self.handle_portfolioItem_event()
         exec_handler = self.handle_exec_event()
+
+        # receive sigterm from docker to stop the loop
+        if sys.platform == 'win32': # windows not support add_signal_handler
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        else:
+            self.loop.add_signal_handler(signal.SIGTERM, self.handle_sigterm)
+            
         self.ib.run(*trade_handlers, position_handler, portfolioItem_handler, exec_handler, self.global_check())

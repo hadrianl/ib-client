@@ -1,3 +1,4 @@
 ib_insync
 websockets
 TA-Lib
+python-dateutil
