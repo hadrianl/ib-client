@@ -33,14 +33,14 @@ def tree(obj):
     """
     if isinstance(obj, (bool, int, float, str, bytes, )):
         return obj
+    elif isinstance(obj, (list, tuple, set)):
+        return [tree(i) for i in obj]
     elif isinstance(obj, (dt.date, dt.time)):
         return obj.isoformat()
     elif isinstance(obj, dict):
         return {k: tree(v) for k, v in obj.items()}
     elif util.isnamedtupleinstance(obj):
         return {f: tree(getattr(obj, f)) for f in obj._fields}
-    elif isinstance(obj, (list, tuple, set)):
-        return [tree(i) for i in obj]
     elif is_dataclass(obj):
         return tree(util.dataclassNonDefaults(obj))
     else:
@@ -120,7 +120,7 @@ class IBWS:
         msg = {'t': 'trades', 'data': []}
         for t in trades:
             t.log = []
-            # t.fills = []
+            t.fills = []
             msg['data'].append(tree(t))
 
         await ws.send(json.dumps(msg))
@@ -242,7 +242,7 @@ class IBWS:
             self.ib.run(
                 u.send(json.dumps({
                     't': 'ticker', 
-                    'data': {'time': str(ticker.time), 'bid': ticker.bid, 'bidSize': ticker.bidSize, 'ask': ticker.ask, 'askSize': ticker.askSize, 'last': ticker.last, 'lastSize': ticker.lastSize, 'conId': conId}
+                    'data': {'time': ticker.time.astimezone().isoformat(), 'bid': ticker.bid, 'bidSize': ticker.bidSize, 'ask': ticker.ask, 'askSize': ticker.askSize, 'last': ticker.last, 'lastSize': ticker.lastSize, 'conId': conId}
                     })
                 )
             )
