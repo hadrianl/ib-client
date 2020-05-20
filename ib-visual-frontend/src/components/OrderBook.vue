@@ -1,11 +1,11 @@
 <template>
     <v-container>
-        <v-row><v-text-field v-model="ticker.time" readonly disabled hide-details dense></v-text-field></v-row>
-        <v-row><v-progress-linear v-model="askSizeRate" color='#00FF7F'></v-progress-linear></v-row>
-        <v-row><v-btn :value="ticker.ask" color='#90EE90' block @click="attachPriceClick(ticker.ask)">ASK:{{ ticker.askSize }}@{{ ticker.ask }}</v-btn></v-row>
-        <v-row><v-btn :value="ticker.last" color='#ADD8E6' block @click="attachPriceClick(ticker.last)">LAST:{{ ticker.lastSize }}@{{ ticker.last }}</v-btn></v-row>
-        <v-row><v-btn :value="ticker.bid" color='#F08080' block @click="attachPriceClick(ticker.bid)">BID:{{ ticker.bidSize }}@{{ ticker.bid }}</v-btn></v-row>
-        <v-row><v-progress-linear v-model="bidSizeRate" color='#FF6347'></v-progress-linear></v-row>
+        <h4 class="grey--text text--darken-1 text-center">{{ ticker.time }}</h4>
+        <v-progress-linear v-model="askSizeRate" color='#00FF7F'></v-progress-linear>
+        <v-btn color='#90EE90' block @click="attachPriceClick(ticker.ask)">{{ askLabel }}</v-btn>
+        <v-btn color='#ADD8E6' block @click="attachPriceClick(ticker.last)">{{ lastLabel }}</v-btn>
+        <v-btn color='#F08080' block @click="attachPriceClick(ticker.bid)">{{ bidLabel }}</v-btn>
+        <v-progress-linear v-model="bidSizeRate" color='#FF6347'></v-progress-linear>
     </v-container>
 </template>
 <script>
@@ -42,7 +42,10 @@ export default {
                 this.$ibws.send({'action': 'unsub_ticker', 'contract': oldCon})
             }
 
-            this.$ibws.send({'action': 'sub_ticker', 'contract': newCon})
+            if (newCon) {
+                this.$ibws.send({'action': 'sub_ticker', 'contract': newCon})
+            }
+            
         },
     },
     mounted() {

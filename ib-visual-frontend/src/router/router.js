@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import BarChart from '../views/BarChart.vue'
+import MarketChart from '../views/MarketChart.vue'
 import MainChart from '../views/MainChart.vue'
 
 Vue.use(VueRouter)
@@ -8,7 +8,7 @@ Vue.use(VueRouter)
 const routes = [
     {path: '/', component: MainChart},
     {path: '/main', component: MainChart},
-    {path: '/bar', component: BarChart},
+    {path: '/market', component: MarketChart},
 ]
 
 

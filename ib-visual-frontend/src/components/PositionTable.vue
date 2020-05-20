@@ -6,18 +6,19 @@
     hide-default-footer
     class="elevation-1">
         <template v-slot:item.contract="{ item }">
-            <v-tooltip bottom>
+            <v-tooltip right>
                 <template v-slot:activator="{ on }">
                     <a v-on="on" @click.stop="$store.commit('addContract', item.contract);$store.commit('selectContract', item.contract)">{{ item.contract.localSymbol }}</a>
                 </template>
-                <span>
-                    单击跳转到-> {{ item.contract.localSymbol }}<br>
-                    ConId:{{ item.contract.conId }}<br>
-                    Expire: {{ item.contract.lastTradeDateOrContractMonth}}<br>
-                    Exchange: {{ item.contract.exchange}}<br>
-                    Currency: {{item.contract.currency}}<br>
-                    SecType: {{item.contract.secType}}
-                </span>
+                <h1 class='blue--text'>{{ item.contract.localSymbol }}</h1>
+                <ul>
+                    <li>ConId:{{ item.contract.conId }}</li>
+                    <li>Expire: {{ item.contract.lastTradeDateOrContractMonth || "---" }}</li>
+                    <li>Exchange: {{ item.contract.exchange}}</li>
+                    <li>Currency: {{item.contract.currency}}</li>
+                    <li>SecType: {{item.contract.secType}}</li>
+                </ul>
+                <p class='green--text'>Click to Select Contract!</p>
             </v-tooltip>
         </template> 
     </v-data-table>
@@ -31,11 +32,12 @@ export default {
                     {
                         text: 'contract',
                         value: 'contract',
-                        sortable: true,
+                        sortable: false,
                     },
                     {
                         text: 'position',
-                        value: 'position'
+                        value: 'position',
+                        sortable: false,
                     },
                     {
                         text: 'avgCost',
@@ -44,6 +46,7 @@ export default {
                     {
                         text: 'account',
                         value: 'account',
+                        sortable: false,
                     }]
                 }
             },
@@ -59,16 +62,7 @@ export default {
         }
     },
     methods: {
-        rowClassName(row) {
-            switch (true){
-                case row.position > 0:
-                    return 'table-positive-row'
-                case row.position < 0:
-                    return 'table-negative-row'
-                default:
-                    return 'table-normal-row'
-            }
-        }
+
     }
         }
 </script>

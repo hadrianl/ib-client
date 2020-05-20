@@ -5,7 +5,7 @@ RUN npm --registry https://registry.npm.taobao.org install
 COPY . .
 RUN npm run build
 
-From nginx:alpine as production
+FROM nginx:alpine as production
 
 RUN mkdir /app
 COPY --from=builder /app/dist /app

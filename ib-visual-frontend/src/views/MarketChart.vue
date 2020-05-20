@@ -181,27 +181,12 @@ export default {
                 // visible: boolean;
                 timeVisible: true,
                 secondsVisible: true
-            }
-        }
-        this.chart = createChart(this.$refs.barChart, chartOptions)
-        this.ohlcSeries = this.chart.addCandlestickSeries()
-        this.volSeries = this.chart.addHistogramSeries({base: 0, overlay: true})
-        // this.maSeries = this.chart.addLineSeries()
-        let colors = {5: '#DC143C', 10: '#FFC125', 30: '#C0FF3E', 60: '#97FFFF'}
-        for(let key in this.maSeries){
-            this.maSeries[key] = this.chart.addLineSeries({
-                priceLineVisible: false, 
-                lastValueVisible: false, 
-                lineWidth: 1, 
-                color: colors[key],
-                })
-        }
-        this.chart.applyOptions({
+            },
             crosshair: {
                 mode: 0
             }
-        })
-        this.ohlcSeries.applyOptions({
+        }
+        const ohlcOptions = {
             upColor: '#FF0000',
             downColor: '#00FFFF',
             borderVisible: false,
@@ -216,20 +201,33 @@ export default {
                 top: 0.1,
                 bottom: 0.3
             }
-        })
-        this.volSeries.applyOptions({
+        }
+        const volOptions = {
+            base: 0, 
+            overlay: true,
             color: '#6495ED',
             scaleMargins: {
                 top: 0.6,
                 bottom: 0.02
             }
-        })
+        }
+        this.chart = createChart(this.$refs.barChart, chartOptions)
+        this.ohlcSeries = this.chart.addCandlestickSeries(ohlcOptions)
+        this.volSeries = this.chart.addHistogramSeries(volOptions)
 
-        // var _this = this
+        let colors = {5: '#DC143C', 10: '#FFC125', 30: '#C0FF3E', 60: '#97FFFF'}
+
+        for(let key in this.maSeries){
+            this.maSeries[key] = this.chart.addLineSeries({
+                priceLineVisible: false, 
+                lastValueVisible: false, 
+                lineWidth: 1, 
+                color: colors[key],
+                })
+        }
+
         this.chart.subscribeClick(this.onChartClick)
         this.chart.subscribeCrosshairMove(this.onCrosshairMove)
-        // this.chart.subscribeVisibleTimeRangeChange(this.onTimeRangeChange)
-        // this.chart.unsubscribeVisibleTimeRangeChange(this.onTimeRangeChange)
 
         this.$ibws.on('trade', this.handleTrade)
 
@@ -397,9 +395,9 @@ export default {
                     if(index < key){
                         maArr[key].push({'time': t, 'value': NaN})
                     }else{
-                        let sum = 0
-                        arr.slice(index - key, index).forEach(b => sum += b.close)
-                        maArr[key].push({'time': t, 'value':sum / key})
+                        let total = 0
+                        arr.slice(index - key, index).forEach(b => total += b.close)
+                        maArr[key].push({'time': t, 'value':total / key})
                     }
                 }
             })
@@ -645,6 +643,7 @@ export default {
     #forefront {
     bottom: 4em;
     left: 1em;
+    z-index: 3;
     opacity: .5;
     transition: opacity .2s cubic-bezier(0.005, 1, 0.22, 1);
     display: flex;

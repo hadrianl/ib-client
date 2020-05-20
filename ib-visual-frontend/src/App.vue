@@ -96,7 +96,7 @@ export default {
       currentPage: 0,
       items: [
         { icon: 'mdi-handshake', text: '交易', path: '/main' },
-        { icon: 'mdi-trending-up', text: '行情' , path: '/bar'}],
+        { icon: 'mdi-trending-up', text: '行情' , path: '/market'}],
 			activeItem: "order",
 			hostname: "localhost",
 			noedit: false,
@@ -104,9 +104,9 @@ export default {
 		}
   },
   mounted() {
-      var _this = this
-      this.$ibws.on('error', function(e) {
-          _this.notice({
+
+      this.$ibws.on('error', e => {
+          this.notice({
             color: 'error',
             title: 'Error',
             content: e,
@@ -114,24 +114,24 @@ export default {
       }
       )
 
-      this.$ibws.on('open', function() {
-          _this.notice({
+      this.$ibws.on('open', () => {
+          this.notice({
             color: 'success',
             title: 'Connection',
             content: 'Connect Opened!',
           })
       })
 
-      this.$ibws.on('close', function() {
-          _this.notice({
+      this.$ibws.on('close', () => {
+          this.notice({
             color: 'warning',
             title: 'Connection',
             content: 'Connect Closed!',
           })
       })
 
-      this.$ibws.on('death', function() {
-          _this.notice({
+      this.$ibws.on('death', () => {
+          this.notice({
             color: 'error',
             title: 'Connection',
             content: 'Connect Failed',

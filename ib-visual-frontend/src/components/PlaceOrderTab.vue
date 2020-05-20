@@ -1,6 +1,6 @@
 <template>
     <v-card>
-        <v-tabs v-model="tab">
+        <v-tabs v-model="tab" grow slider-size="2" slider-color='blue'>
             <v-tab :key="1">触发止损单</v-tab>
             <v-tab :key="2">均线触发单</v-tab>
             <v-tab :key="3">移动止损单</v-tab>

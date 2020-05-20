@@ -5,6 +5,7 @@
     :items="trades"
     item-key="order.permId"
     :expanded.sync="expandedTrade"
+    calculate-widths
     single-expand
     show-expand
     sort-by="permId"
@@ -62,32 +63,36 @@ export default {
                     text: 'symbol',
                     value: 'contract.localSymbol',
                     align: 'center',
+                    sortable: false,
                 },
                 {
                     text: 'action',
                     value: 'order.action',
                     align: 'center',
+                    sortable: false,
                 },
                 {
                     text: 'filled',
                     value: 'order.filledQuantity',
-                    align: 'end',
+                    align: 'center',
+                    sortable: false,
                 },
                 {
                     text: 'remaining',
                     value: 'orderStatus.remaining',
-                    align: 'end',
+                    align: 'center',
                     divider: true,
+                    sortable: false,
                 },
                 {
                     text: 'lmtPrice',
                     value: 'order.lmtPrice',
-                    align: 'end',
+                    align: 'center',
                 },
                 {
                     text: 'auxPrice',
                     value: 'order.auxPrice',
-                    align: 'end',
+                    align: 'center',
                 },
                 {
                     text: 'orderType',
@@ -103,6 +108,7 @@ export default {
                     text: 'orderRef',
                     value: 'order.orderRef',
                     align: 'center',
+                    sortable: false,
                 },
                 {
                     text: 'operation',

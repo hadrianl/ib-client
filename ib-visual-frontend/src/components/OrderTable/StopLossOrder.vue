@@ -69,8 +69,6 @@
             </v-list-item>
         </v-list>
     </v-form>
-
-
 </template>
 <script>
 import {Order} from '../../plugins/datastructure.js'

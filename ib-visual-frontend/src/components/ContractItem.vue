@@ -15,7 +15,6 @@
     prepend-icon="mdi-ios-search"
     chips
     small-chips
-    deletable-chips
     dense
     outlined
     clearable

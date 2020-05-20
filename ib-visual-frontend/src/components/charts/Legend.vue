@@ -7,9 +7,9 @@
         <div style="color:#FFFFFF">Close:  <strong :style="ohlcLegendStyle">{{ legend_bar["close"] }}</strong></div>
         <div style="color:#FFFFFF">Volume: <strong :style="ohlcLegendStyle">{{ legend_bar["volume"] }}</strong></div>
         <div style="color:#FFFFFF">
-            <inline v-for="(v, p) in legend_ma" :key="p" :name="p">
+            <span v-for="(v, p) in legend_ma" :key="p" >
                 ma{{p}}: <strong :style="maStyles[p]">{{ v?v.toFixed(1):v }}</strong> 
-            </inline>
+            </span>
         </div>    
     </div>
 </template>
@@ -19,7 +19,7 @@ export default {
         return {
             ohlcLegendStyle: {
                 color: "#FFFFFFF",
-                background: "#FF8C00"
+                backgroundColor: "#FF8C00"
             },
             maStyles: {
                 5:  {

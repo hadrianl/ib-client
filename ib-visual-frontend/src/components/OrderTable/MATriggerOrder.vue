@@ -60,6 +60,7 @@
                     <v-col cols="4">
                         <v-btn 
                         block
+                        min-width="10px"
                         @click="reset()" >RESET</v-btn>
                     </v-col>  
                 </v-row>
