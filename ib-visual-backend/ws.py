@@ -33,14 +33,14 @@ def tree(obj):
     """
     if isinstance(obj, (bool, int, float, str, bytes, )):
         return obj
-    elif isinstance(obj, (list, tuple, set)):
-        return [tree(i) for i in obj]
     elif isinstance(obj, (dt.date, dt.time)):
         return obj.isoformat()
     elif isinstance(obj, dict):
         return {k: tree(v) for k, v in obj.items()}
     elif util.isnamedtupleinstance(obj):
         return {f: tree(getattr(obj, f)) for f in obj._fields}
+    elif isinstance(obj, (list, tuple, set)):
+        return [tree(i) for i in obj]
     elif is_dataclass(obj):
         return tree(util.dataclassNonDefaults(obj))
     else:
