@@ -34,7 +34,8 @@ def tree(obj):
     if isinstance(obj, (bool, int, float, str, bytes, )):
         return obj
     elif isinstance(obj, (dt.date, dt.time)):
-        return obj.isoformat()
+        obj_ = getattr(obj, 'astimezone', None)
+        return obj_().isoformat() if obj_ else obj.isoformat()
     elif isinstance(obj, dict):
         return {k: tree(v) for k, v in obj.items()}
     elif util.isnamedtupleinstance(obj):
@@ -92,7 +93,7 @@ class IBWS:
 
         async for t in event:
             t.log = []
-            t.fills = []
+            # t.fills = []
             msg = {'t': 'trade', 'data': tree(t)}
             for u in self.USER:
                 await u.send(json.dumps(msg))
@@ -120,7 +121,7 @@ class IBWS:
         msg = {'t': 'trades', 'data': []}
         for t in trades:
             t.log = []
-            t.fills = []
+            # t.fills = []
             msg['data'].append(tree(t))
 
         await ws.send(json.dumps(msg))
@@ -169,7 +170,7 @@ class IBWS:
                     contract.exchange = "HKFE"
                 bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, '', '2 D', barSize, 'TRADES', useRTH=False, keepUpToDate=True), 10)
             except asyncio.TimeoutError:
-                await ws.send(json.dumps({'error': '订阅K线超时：请确认数据连接是否中断'}))
+                await ws.send(json.dumps({'t':'error', 'data': '订阅K线超时：请确认数据连接是否中断'}))
                 return
 
         conId = bars.contract.conId
@@ -199,7 +200,7 @@ class IBWS:
                     contract.exchange = "HKFE"
                 ticker = self.ib.reqMktData(contract)
             except asyncio.TimeoutError:
-                await ws.send(json.dumps({'error': '订阅ticker超时：请确认数据连接是否中断'}))
+                await ws.send(json.dumps({'t':'error', 'data': '订阅ticker超时：请确认数据连接是否中断'}))
                 return
 
         conId = ticker.contract.conId
@@ -220,7 +221,7 @@ class IBWS:
         try:
             bars = await asyncio.wait_for(self.ib.reqHistoricalDataAsync(contract, end, duration, barSize, 'TRADES', useRTH=False, keepUpToDate=False), 10)
         except asyncio.TimeoutError:
-            await ws.send(json.dumps({'error': '获取K线超时：请确认数据连接是否中断'}))
+            await ws.send(json.dumps({'t':'error', 'data': '获取K线超时：请确认数据连接是否中断'}))
             return
 
         await ws.send(json.dumps({

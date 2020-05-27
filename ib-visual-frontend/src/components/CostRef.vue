@@ -3,18 +3,18 @@
         <v-list-group :value="false">
             <template v-slot:activator>
                 <v-list-item-content>
-                    <v-list-item-title class='grey--text text--darken-2 subtitle-1'>参考成本</v-list-item-title>
+                    <v-list-item-title class='grey--text text--darken-2 subtitle-1'>{{$t('cost.refCost')}}</v-list-item-title>
                 </v-list-item-content>
             </template>
             <v-list-item-group v-model="cost">
                 <v-list-item :value="openCost" @click="costRefClick(openCost)">
-                    开仓成本：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
+                    {{$t('cost.openCost')}}：{{ openCost[1] }}@{{ parseInt(openCost[1]!=0?openCost[0]/openCost[1]:openCost[0]) }}
                 </v-list-item>
                 <v-list-item :value="sessionCost" @click="costRefClick(sessionCost)">
-                    会话成本：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
+                    {{$t('cost.sessCost')}}：{{ sessionCost[1] }}@{{ parseInt(sessionCost[1]!=0?sessionCost[0]/sessionCost[1]:sessionCost[0]) }}
                 </v-list-item>
                 <v-list-item :value="totalCost" @click="costRefClick(totalCost)">
-                    总成本  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
+                    {{$t('cost.totalCost')}}  ：{{ totalCost[1] }}@{{ parseInt(totalCost[1]!=0?totalCost[0]/totalCost[1]:totalCost[0]) }}
                 </v-list-item>
             </v-list-item-group>    
         </v-list-group> 

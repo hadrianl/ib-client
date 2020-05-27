@@ -138,6 +138,18 @@ class Order {
 
 
 class OrderStatus {
+    PendingSubmit = 'PendingSubmit'
+    PendingCancel = 'PendingCancel'
+    PreSubmitted = 'PreSubmitted'
+    Submitted = 'Submitted'
+    ApiPending = 'ApiPending'
+    ApiCancelled = 'ApiCancelled'
+    Cancelled = 'Cancelled'
+    Filled = 'Filled'
+    Inactive = 'Inactive'
+    DoneStates = ['Filled', 'Cancelled', 'ApiCancelled']
+    ActiveStates = ['PendingSubmit', 'ApiPending', 'PreSubmitted', 'Submitted']
+
     constructor() {
         this.orderId = 0
         this.status = ''
@@ -150,20 +162,6 @@ class OrderStatus {
         this.clientId = 0
         this.whyHeld = ''
         this.mktCapPrice = 0.0
-
-        // PendingSubmit: ClassVar = 'PendingSubmit'
-        // PendingCancel: ClassVar = 'PendingCancel'
-        // PreSubmitted: ClassVar = 'PreSubmitted'
-        // Submitted: ClassVar = 'Submitted'
-        // ApiPending: ClassVar = 'ApiPending'
-        // ApiCancelled: ClassVar = 'ApiCancelled'
-        // Cancelled: ClassVar = 'Cancelled'
-        // Filled: ClassVar = 'Filled'
-        // Inactive: ClassVar = 'Inactive'
-
-        // DoneStates: ClassVar = {'Filled', 'Cancelled', 'ApiCancelled'}
-        // ActiveStates: ClassVar = {
-        //     'PendingSubmit', 'ApiPending', 'PreSubmitted', 'Submitted'}
     }
 }
 
@@ -217,7 +215,7 @@ class Fill {
         this.contract = new Contract()
         this.execution = new Execution()
         this.commissionReport = new CommissionReport()
-        this.time =  Date()
+        this.time = new Date()
     }
 }
 
@@ -318,4 +316,4 @@ class Bar{
 
 
 
-export {Order, Contract,OrderStatus, Trade, Bar, OrderState, Fill, TagValue, TradeLogEntry, OrderComboLeg, SoftDollarTier, DeltaNeutralContract}
+export {Order, Contract, OrderStatus, Trade, Bar, OrderState, Fill, TagValue, TradeLogEntry, OrderComboLeg, SoftDollarTier, DeltaNeutralContract}

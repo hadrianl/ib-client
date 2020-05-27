@@ -1,17 +1,16 @@
 <template>
     <v-autocomplete
-    :value="currentItem"
+    v-model="currentItem"
     :items="itemsList"
     :search-input.sync="search"
     :success="hasContract"
-    @input="selectItem"
     @click:clear="clearItem"
     color="white"
     hide-no-data
     item-text= "symbol"
     item-value="contract"
     label="Contract"
-    placeholder="输入合约"
+    :placeholder="$t('placeHolder.contractInput')"
     prepend-icon="mdi-ios-search"
     chips
     small-chips
@@ -38,13 +37,21 @@ export default {
         }
     },
     computed: {
-        currentItem() {
-            const c = this.$store.state.currentContract
+        currentItem: {
+            get () {
+                const c = this.$store.state.currentContract
 
-            if(!c) return null
-            console.log(c)
-            return  {'symbol': c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4),
-                    'contract': c,}
+                if(!c) return null
+                return  {'symbol': c.symbol + c.lastTradeDateOrContractMonth.substr(2, 4),
+                        'contract': c,}
+            },
+            set (item) {
+                if(item){
+                    this.$store.commit('selectContract', item.contract)
+                    this.$emit('select-contract', item.contract)
+                }
+            }
+            
         },
         hasContract() {
             return Boolean(this.$store.state.currentContract)
@@ -65,13 +72,6 @@ export default {
 
     },
     methods: {
-        selectItem(item) {
-            if(item){
-                this.$store.commit('selectContract', item.contract)
-                this.$emit('select-contract', item.contract)
-            }
-
-        },
         clearItem() {
             console.log('clearItem')
             this.$store.commit('clearContract')
@@ -88,7 +88,7 @@ export default {
                 this.itemsList.forEach( c => {if(c.symbol === ret[0]) {flag = false}})
 
                 if (flag){
-                    var c = new Contract()
+                    let c = new Contract()
                     c.secType = 'FUT'
                     c.symbol = ret[1].toUpperCase()
                     c.lastTradeDateOrContractMonth = '20' + ret[2]

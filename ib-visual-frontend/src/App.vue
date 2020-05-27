@@ -15,7 +15,7 @@
           <v-list-item-action>
             <v-icon>{{ item.icon }}</v-icon>
             <v-list-item-action-text>
-              {{ item.text }}
+              {{ $t(`nav.${item.text}`) }}
             </v-list-item-action-text>
           </v-list-item-action>
         </v-list-item>
@@ -24,7 +24,7 @@
     <v-app-bar
     app
     clipped-left
-    color="blue">
+    color="primary">
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
       <v-text-field
       v-model="hostname"
@@ -33,10 +33,30 @@
       hide-details="auto"
       solo
       single-line />
-      <v-btn color="success" @click.stop=connectBackendWS>连接</v-btn>
-      <v-btn color="error" @click.stop=stopBackendWS>停止</v-btn>
+      <v-btn color="success" @click.stop=connectBackend class="mx-2">{{$t('button.connect')}}</v-btn>
+      <v-btn color="error" @click.stop=stopBackend class="mx-2">{{$t('button.stop')}}</v-btn>
       <v-spacer />
       <ContractItem></ContractItem>
+      <v-menu offset-y>
+      <template v-slot:activator="{ on }">
+        <v-btn
+          color="primary"
+          dark
+          v-on="on"
+        >
+          {{$i18n.locale}}
+        </v-btn>
+      </template>
+      <v-list>
+        <v-list-item
+          v-for="(item, index) in langItems"
+          :key="index"
+          @click="$i18n.locale = item.value"
+        >
+          <v-list-item-title>{{ item.text }}</v-list-item-title>
+        </v-list-item>
+      </v-list>
+    </v-menu>
     </v-app-bar>
     <v-content>
         <router-view></router-view>
@@ -65,7 +85,7 @@
         :color="isConnect?'success':'error'"
         >
           <v-spacer></v-spacer>
-          <span><strong>{{isConnect?"已连接":"未连接"}}</strong></span>
+          <span><strong>{{isConnect?$t('connState.connected'):$t('connState.disconnected')}}</strong></span>
           <v-spacer></v-spacer>
         </v-system-bar>
       </v-col>
@@ -95,8 +115,12 @@ export default {
       drawer: null,
       currentPage: 0,
       items: [
-        { icon: 'mdi-handshake', text: '交易', path: '/main' },
-        { icon: 'mdi-trending-up', text: '行情' , path: '/market'}],
+        { icon: 'mdi-handshake', text: 'trade', path: '/main' },
+        { icon: 'mdi-trending-up', text: 'market' , path: '/market'}],
+      langItems: [
+        {text: "English", value: "en"},
+        {text: "中文", value: "zh"},
+      ],
 			activeItem: "order",
 			hostname: "localhost",
 			noedit: false,
@@ -151,12 +175,12 @@ export default {
 		changeContent(page) {
 			this.currentPage=page
 		},
-		connectBackendWS(){
+		connectBackend(){
 			this.$ibws.setUrl(this.hostname)
 			this.$ibws.init(false)
 			this.noedit = true
     },
-    stopBackendWS() {
+    stopBackend() {
       if(this.$ibws.isReady()){
         this.$ibws.send({'action': 'disconnect_ib'})
       }else{

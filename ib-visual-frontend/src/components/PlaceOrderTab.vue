@@ -1,9 +1,9 @@
 <template>
     <v-card>
         <v-tabs v-model="tab" grow slider-size="2" slider-color='blue'>
-            <v-tab :key="1">触发止损单</v-tab>
-            <v-tab :key="2">均线触发单</v-tab>
-            <v-tab :key="3">移动止损单</v-tab>
+            <v-tab :key="1">{{$t('orderTab.stopLoss')}}</v-tab>
+            <v-tab :key="2">{{$t('orderTab.maTrigger')}}</v-tab>
+            <v-tab :key="3">{{$t('orderTab.trailStop')}}</v-tab>
         </v-tabs>
         <!-- <v-tabs-slider></v-tabs-slider> -->
         <v-tabs-items v-model="tab">

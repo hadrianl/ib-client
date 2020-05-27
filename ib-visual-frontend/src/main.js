@@ -2,6 +2,7 @@ import Vue from 'vue'
 import App from './App.vue'
 import './plugins/eventBus.js'
 import ibws from './plugins/websocket.js'
+import i18n from './plugins/i18n.js'
 import store from './store/store.js'
 import router from './router/router.js'
 import vuetify from './plugins/vuetify.js'
@@ -12,6 +13,7 @@ window.ibws = ibws
 const vm = new Vue({
     store,
     router,
+    i18n,
     mounted() {
         this.$ibws.on('open', () => {
             this.$store.commit('setConnectState', true)

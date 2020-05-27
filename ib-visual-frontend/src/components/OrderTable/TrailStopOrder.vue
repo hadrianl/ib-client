@@ -53,8 +53,8 @@
                 rounded 
                 dense
                 class="mx-auto pm-auto">
-                    <v-btn value="BUY" color="red">BUY</v-btn>
-                    <v-btn value="SELL" color="green">SELL</v-btn>
+                    <v-btn value="BUY" color="red">{{$t('button.buy')}}</v-btn>
+                    <v-btn value="SELL" color="green">{{$t('button.sell')}}</v-btn>
                 </v-btn-toggle>
             </v-list-item>
             <v-list-item>
@@ -65,12 +65,12 @@
                         @click="insertOrder()" 
                         :color="action?action=='BUY'?'red':'green':''"
                         :disabled="!action"
-                        >{{action?action:"NotSet"}}</v-btn>
+                        >{{action?$t(`button.${action.toLowerCase()}`):$t('button.notSet')}}</v-btn>
                     </v-col>
                     <v-col cols="4">
                         <v-btn 
                         block
-                        @click="reset()" >RESET</v-btn>
+                        @click="reset()">{{$t('button.reset')}}</v-btn>
                     </v-col>  
                 </v-row>
             </v-list-item>

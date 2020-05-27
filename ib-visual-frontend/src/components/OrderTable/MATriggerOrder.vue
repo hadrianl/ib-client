@@ -26,7 +26,7 @@
                 <v-text-field 
                 v-model="trigger" 
                 label="triggerType" 
-                placeholder="触发类型" 
+                :placeholder="$t('placeHolder.triggerType')" 
                 :rules="triggerRules"
                 dense
                 outlined></v-text-field>
@@ -43,9 +43,10 @@
                 <v-btn-toggle 
                 v-model="action" 
                 rounded 
+                dense
                 class="mx-auto pm-auto">
-                    <v-btn value="BUY" color="red">BUY</v-btn>
-                    <v-btn value="SELL" color="green">SELL</v-btn>
+                    <v-btn value="BUY" color="red">{{$t('button.buy')}}</v-btn>
+                    <v-btn value="SELL" color="green">{{$t('button.sell')}}</v-btn>
                 </v-btn-toggle>
             </v-list-item>
             <v-list-item>
@@ -55,13 +56,13 @@
                         block
                         @click="insertOrder()" 
                         :color="action?action=='BUY'?'red':'green':''"
-                        :disabled="!action">{{action?action:"NotSet"}}</v-btn>
+                        :disabled="!action">{{action?$t(`button.${action.toLowerCase()}`):$t('button.notSet')}}</v-btn>
                     </v-col>
                     <v-col cols="4">
                         <v-btn 
                         block
                         min-width="10px"
-                        @click="reset()" >RESET</v-btn>
+                        @click="reset()">{{$t('button.reset')}}</v-btn>
                     </v-col>  
                 </v-row>
             </v-list-item>
@@ -202,7 +203,7 @@ export default {
                 }
             }
             return options
-        }
-		}
+        },
+	}
 }
 </script>

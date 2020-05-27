@@ -2,18 +2,18 @@
     <v-container fluid class='mt-1 pt-1'>
         <v-card ref="barCard" :color="colors.background">
             <v-toolbar dense flat :color="colors.background">
-                <v-btn-toggle v-model="barSize" rounded mandatory dense borderless dark class='period'>
-                <v-btn value="1 min">1 min</v-btn>
-                <v-btn value="3 mins">3 mins</v-btn>
-                <v-btn value="5 mins">5 mins</v-btn>
-                <v-btn value="10 mins">10 mins</v-btn>
-                <v-btn value="15 mins">15 mins</v-btn>
-                </v-btn-toggle>
+                <v-radio-group v-model="barSize" dense mandatory dark hide-details row >
+                    <v-radio value="1 min"   label="1 min"></v-radio>
+                    <v-radio value="3 mins"  label="3 mins"></v-radio>
+                    <v-radio value="5 mins"  label="5 mins"></v-radio>
+                    <v-radio value="10 mins" label="10 mins"></v-radio>
+                    <v-radio value="15 mins" label="15 mins"></v-radio>
+                </v-radio-group>
                 <v-spacer></v-spacer>
-                <v-switch v-model="isTrail" label="Trail" dark dense hide-details></v-switch>
-                <v-btn-toggle v-model="action" rounded dense>
-                    <v-btn value="BUY" color="red">BUY</v-btn>
-                    <v-btn value="SELL" color="green">SELL</v-btn>
+                <v-switch v-model="isTrail" :label="$t('button.trail')" dark dense hide-details></v-switch>
+                <v-btn-toggle v-model="action" rounded dense class='mx-5'>
+                    <v-btn value="BUY" color="red">{{$t('button.buy')}}</v-btn>
+                    <v-btn value="SELL" color="green">{{$t('button.sell')}}</v-btn>
                 </v-btn-toggle>
                 <v-text-field 
                 v-model.number="volume" 
@@ -58,7 +58,7 @@
                             >
                             <v-list>
                                 <v-list-item @click="cancelAll()">
-                                    <v-list-item-title>Cancel All</v-list-item-title>
+                                    <v-list-item-title>{{$t('button.cancelAllOrders')}}</v-list-item-title>
                                 </v-list-item>
                             </v-list>
                         </v-menu>
@@ -184,7 +184,10 @@ export default {
             },
             crosshair: {
                 mode: 0
-            }
+            },
+            localization: {
+                locale: 'zh-Hans-CN'
+            },
         }
         const ohlcOptions = {
             upColor: '#FF0000',
@@ -560,7 +563,7 @@ export default {
                 case 'LMT':
                     {
                         order.lmtPrice = parseInt(price)
-                        order.orderRef = `ct@${order.lmtPrice}`
+                        order.orderRef = `ct-${order.totalQuantity}@${order.lmtPrice}`
                         break
                     }
                     
@@ -569,7 +572,7 @@ export default {
                         let offset = parseInt(action == 'BUY'?this.offset:-this.offset)
                         order.lmtPrice = parseInt(price)
                         order.auxPrice = order.lmtPrice + offset
-                        order.orderRef = `ct@${order.auxPrice}->${order.lmtPrice}`
+                        order.orderRef = `ct-sl-${order.totalQuantity}@${order.auxPrice}->${order.lmtPrice}`
                         break
                     }
                 case 'TRAIL LIMIT':
@@ -578,7 +581,7 @@ export default {
                         order.auxPrice = Math.round(Math.abs(lastPrice - price))
                         order.triggerMethod = 4
                         order.lmtPriceOffset = parseInt(this.offset)
-                        order.orderRef = `ct@^${order.trailStopPrice}->${order.auxPrice}[${order.lmtPrice}]`
+                        order.orderRef = `ct-trailsl-${order.totalQuantity}@^${order.trailStopPrice}->${order.auxPrice}[${order.lmtPriceOffset}]`
                         break
                     }
                 default:

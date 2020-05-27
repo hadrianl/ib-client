@@ -1,10 +1,10 @@
 <template>
     <v-card>
         <v-tabs v-model="tab" slider-size="2" slider-color='blue'>
-            <v-tab :key="1">ORDER</v-tab>
-            <v-tab :key="2">FILL</v-tab>
-            <v-tab :key="3">PORTFOLIO</v-tab>
-            <v-tab :key="4">POSITION</v-tab>
+            <v-tab :key="1">{{$t('mainTab.order')}}</v-tab>
+            <v-tab :key="2">{{$t('mainTab.fill')}}</v-tab>
+            <v-tab :key="3">{{$t('mainTab.portfolio')}}</v-tab>
+            <v-tab :key="4">{{$t('mainTab.position')}}</v-tab>
         </v-tabs>
         <!-- <v-tabs-slider></v-tabs-slider> -->
         <v-tabs-items v-model="tab">
