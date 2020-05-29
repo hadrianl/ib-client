@@ -5,6 +5,8 @@
     :items="trades"
     item-key="order.permId"
     :expanded.sync="expandedTrade"
+    fixed-header
+    disable-pagination
     calculate-widths
     single-expand
     show-expand

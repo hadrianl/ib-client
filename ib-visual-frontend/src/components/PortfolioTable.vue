@@ -3,6 +3,8 @@
     :height="height"
     :headers="headers"
     :items="portfolio"
+    fixed-header
+    disable-pagination
     hide-default-footer
     class="elevation-1">
         <template v-slot:item.contract="{ item }">

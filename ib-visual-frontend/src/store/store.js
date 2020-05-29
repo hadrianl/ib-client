@@ -27,6 +27,7 @@ const store = new Vuex.Store({
         positionsList: [],
         portfolioList: [],
         fillsList: [],
+        accountValues: [],
         isConnected: false
     },
     getters: {
@@ -212,6 +213,20 @@ const store = new Vuex.Store({
         updateFill(state, fill) {
             fill.time = new Date(fill.time).getTime() / 1000 + 28800
             state.fillsList.push(fill)
+        },
+
+        initAccountValues(state, values) {
+            state.accountValues = values
+        },
+
+        updateAccountValue(state, v) {
+            for (let i in  state.accountValues){
+                if (state.accountValues[i].account === v.account && state.accountValues[i].tag === v.tag && state.accountValues[i].currency === v.currency){
+                    state.accountValues.splice(i, 1, v)
+                    return
+                }
+            }
+            state.accountValues.push(v)
         },
 
         setConnectState(state, b) {

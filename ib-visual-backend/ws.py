@@ -87,6 +87,12 @@ class IBWS:
                 for _, t in self.ib.wrapper.reqId2Ticker.items():
                     if t.contract.conId == conId:
                         t.updateEvent -= self.send_ticker
+    
+    async def handler_account_event(self):
+        async for a in self.ib.accountValueEvent.merge(self.ib.accountSummaryEvent):
+            msg = {'t': 'account_value', 'data': tree(a)}
+            for u in self.USER:
+                await u.send(json.dumps(msg))
 
     async def handle_trade_event(self, event_name: str):
         event = getattr(self.ib, event_name)
@@ -149,6 +155,12 @@ class IBWS:
     async def send_fills(self, ws: websockets.WebSocketServerProtocol):
         fills = self.ib.fills()
         msg = {'t': 'fills', 'data': tree(fills)}
+
+        await ws.send(json.dumps(msg))
+
+    async def send_account_values(self, ws: websockets.WebSocketServerProtocol):
+        accValues = self.ib.accountValues()
+        msg = {'t': 'account_values', 'data': tree(accValues)}
 
         await ws.send(json.dumps(msg))
   
@@ -363,6 +375,8 @@ class IBWS:
                 if contract:
                     contract = Contract(**contract)
                     return self.send_contracts(contract, ws)
+            elif msg['action'] == 'get_all_account_values':
+                return self.send_account_values(ws)
             elif msg['action'] == 'place_order':
                 contract = msg.get('contract')
                 order = msg.get('order')
@@ -452,6 +466,7 @@ class IBWS:
         server = websockets.serve(self.middleware, '0.0.0.0', 6789)
         self.ib.run(server)
         trade_handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
+        account_handler = self.handler_account_event()
         position_handler = self.handle_position_event()
         portfolioItem_handler = self.handle_portfolioItem_event()
         exec_handler = self.handle_exec_event()
@@ -462,4 +477,4 @@ class IBWS:
         else:
             self.loop.add_signal_handler(signal.SIGTERM, self.handle_sigterm)
             
-        self.ib.run(*trade_handlers, position_handler, portfolioItem_handler, exec_handler, self.global_check())
+        self.ib.run(*trade_handlers, position_handler, portfolioItem_handler, exec_handler, account_handler, self.global_check())

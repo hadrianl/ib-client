@@ -28,6 +28,7 @@ const vm = new Vue({
             this.$ibws.send({'action': "get_all_portfolio"})
             this.$ibws.send({'action': "get_all_positions"})
             this.$ibws.send({'action': "get_all_fills"})
+            this.$ibws.send({'action': "get_all_account_values"})
         })
 
         this.$ibws.on('trades', (ts) => {
@@ -60,6 +61,14 @@ const vm = new Vue({
         
         this.$ibws.on('fill', (f) => {
             this.$store.commit('updateFill', f)
+        })
+
+        this.$ibws.on('account_values', (avs) => {
+            this.$store.commit('initAccountValues', avs)
+        })
+
+        this.$ibws.on('account_value', (av) => {
+            this.$store.commit('updateAccountValue', av)
         })
     },
     vuetify,

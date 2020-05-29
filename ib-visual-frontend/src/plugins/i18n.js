@@ -35,6 +35,7 @@ const messages = {
             fill: "FILL",
             portfolio: "PORTFOLIO",
             position: "POSITION",
+            account: "ACCOUNT",
         },
         placeHolder: {
             contractInput: "please input contract",
@@ -76,6 +77,7 @@ const messages = {
             fill: "成交",
             portfolio: "组合",
             position: "持仓",
+            account: "账户",
         },
         placeHolder: {
             contractInput: "输入合约",

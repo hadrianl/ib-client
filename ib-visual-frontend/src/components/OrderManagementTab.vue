@@ -5,6 +5,7 @@
             <v-tab :key="2">{{$t('mainTab.fill')}}</v-tab>
             <v-tab :key="3">{{$t('mainTab.portfolio')}}</v-tab>
             <v-tab :key="4">{{$t('mainTab.position')}}</v-tab>
+            <v-tab :key="5">{{$t('mainTab.account')}}</v-tab>
         </v-tabs>
         <!-- <v-tabs-slider></v-tabs-slider> -->
         <v-tabs-items v-model="tab">
@@ -20,6 +21,9 @@
             <v-tab-item :key="4">
                 <PositionTable height="350"/>
             </v-tab-item>
+            <v-tab-item :key="5">
+                <AccountValuesTable height="350"/>
+            </v-tab-item>
         </v-tabs-items>
     </v-card>
 </template>
@@ -28,6 +32,7 @@ import TradeTable from './TradeTable.vue'
 import PortfolioTable from './PortfolioTable.vue'
 import PositionTable from './PositionTable.vue'
 import FillTable from './FillTable.vue'
+import AccountValuesTable from './AccoutValuesTable.vue'
 export default {
     data() {
         return {
@@ -40,6 +45,7 @@ export default {
         FillTable,
         PortfolioTable,
         PositionTable,
+        AccountValuesTable,
     },
 }
 </script>
