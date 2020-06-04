@@ -5,6 +5,7 @@
 # @File    : ws
 
 from ib_insync import *
+from asyncio import Queue
 import signal
 import os
 import sys
@@ -57,6 +58,7 @@ class IBWS:
         self.ib = IB()
         self.bar2ws: Dict[BarDataList, Set] = {}
         self.loop = asyncio.get_event_loop()
+        self.coroutine_queue = Queue()
 
     async def register(self, user: websockets.WebSocketServerProtocol):
         self.USER.add(user)
@@ -87,8 +89,13 @@ class IBWS:
                 for _, t in self.ib.wrapper.reqId2Ticker.items():
                     if t.contract.conId == conId:
                         t.updateEvent -= self.send_ticker
+
+    async def handle_coroutines(self):
+        while True:
+            c = await self.coroutine_queue.get() # get coroutine(send_bar or send_ticker) from queue 
+            await c
     
-    async def handler_account_event(self):
+    async def handle_account_event(self):
         async for a in self.ib.accountValueEvent.merge(self.ib.accountSummaryEvent):
             msg = {'t': 'account_value', 'data': tree(a)}
             for u in self.USER:
@@ -245,20 +252,18 @@ class IBWS:
         conId = bars.contract.conId
         barSize = bars.barSizeSetting
         for u in self.BAR2USER[(conId, barSize)]:
-            self.ib.run(u.send(json.dumps({
+            self.coroutine_queue.put_nowait(u.send(json.dumps({
                 't': 'bar',
                 'data': {'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
 
     def send_ticker(self, ticker: Ticker):
         conId = ticker.contract.conId
         for u in self.TICK2USER[conId]:
-            self.ib.run(
-                u.send(json.dumps({
+            self.coroutine_queue.put_nowait(u.send(json.dumps({
                     't': 'ticker', 
                     'data': {'time': ticker.time.astimezone().isoformat(), 'bid': ticker.bid, 'bidSize': ticker.bidSize, 'ask': ticker.ask, 'askSize': ticker.askSize, 'last': ticker.last, 'lastSize': ticker.lastSize, 'conId': conId}
                     })
-                )
-            )
+                ))
 
     async def place_dynamic_order(self, contract, order: Order, options: Dict, ws: websockets.WebSocketServerProtocol):
         trigger_type = options['type']
@@ -466,10 +471,11 @@ class IBWS:
         server = websockets.serve(self.middleware, '0.0.0.0', 6789)
         self.ib.run(server)
         trade_handlers = [self.handle_trade_event(e) for e in ['openOrderEvent', 'orderStatusEvent']]
-        account_handler = self.handler_account_event()
+        account_handler = self.handle_account_event()
         position_handler = self.handle_position_event()
         portfolioItem_handler = self.handle_portfolioItem_event()
         exec_handler = self.handle_exec_event()
+        coroutine_handler = self.handle_coroutines()
 
         # receive sigterm from docker to stop the loop
         if sys.platform == 'win32': # windows not support add_signal_handler
@@ -477,4 +483,4 @@ class IBWS:
         else:
             self.loop.add_signal_handler(signal.SIGTERM, self.handle_sigterm)
             
-        self.ib.run(*trade_handlers, position_handler, portfolioItem_handler, exec_handler, account_handler, self.global_check())
+        self.ib.run(coroutine_handler, *trade_handlers, position_handler, portfolioItem_handler, exec_handler, account_handler, self.global_check())

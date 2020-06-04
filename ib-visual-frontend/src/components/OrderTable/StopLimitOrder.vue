@@ -97,7 +97,7 @@ export default {
     mounted() {
         this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
         this.$bus.$on('costReference', this.setOrderBaseOnCost)
-        axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['StopLossOrder'])})
+        axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['StopLimitOrder'])})
     },
     watch: {
         attachOffset(nVal) {
@@ -222,7 +222,7 @@ export default {
             this.action = undefined
             this.attachPrice = 0
             this.attachOffset = 60
-            axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['StopLossOrder'])})
+            axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['StopLimitOrder'])})
             // this.cost = null
         },
 		}

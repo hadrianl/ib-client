@@ -26,9 +26,10 @@ const messages = {
             totalCost: "Total cost",
         },
         orderTab: {
-            stopLoss: "StopLoss",
+            stopLoss: "StopLimit",
             trailStop: "TrailStop",
-            maTrigger: "MATrigger"
+            maTrigger: "MATrigger",
+            limit: "Limit",
         },
         mainTab: {
             order: "ORDER",
@@ -68,9 +69,10 @@ const messages = {
             totalCost: "总成本",
         },
         orderTab: {
-            stopLoss: "触发止损",
+            stopLoss: "停止限价",
             trailStop: "移动止损",
-            maTrigger: "均线触发"
+            maTrigger: "均线触发",
+            limit: "限价"
         },
         mainTab: {
             order: "订单",
