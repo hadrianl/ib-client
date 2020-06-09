@@ -203,12 +203,10 @@ class IBWS:
 
     async def unsub_klines(self, contract: Contract, barSize: str, ws: websockets.WebSocketServerProtocol):
         conId = contract.conId
-        # logger.info(f'unsub_klines:{conId}')
         if ws in self.BAR2USER[(conId, barSize)]:
             self.BAR2USER[(conId, barSize)].remove(ws)
 
     async def sub_ticker(self, contract: Contract, ws: websockets.WebSocketServerProtocol):
-        # logger.info(f'sub_ticker:{contract.conId}')
         for _, t in self.ib.wrapper.reqId2Ticker.items():
             if t.contract == contract:
                 ticker: Ticker = t
@@ -229,7 +227,6 @@ class IBWS:
     
     async def unsub_ticker(self, contract: Contract, ws: websockets.WebSocketServerProtocol):
         conId = contract.conId
-        # logger.info(f'unsub_ticker:{conId}')
         if ws in self.TICK2USER[conId]:
             self.TICK2USER[conId].remove(ws)
    
@@ -272,7 +269,6 @@ class IBWS:
         triggerOffset = options['triggerOffset']
         period = options['period']
         action = order.action
-        # contract.includeExpired = False if contract.includeExpired == 'False' else True
 
         logger.info(f'Place_dynamic_order: {contract.conId}  {options}')
         if trigger_type == 'MA':
@@ -367,6 +363,7 @@ class IBWS:
 
     def recvMsg2Handler(self, msg: Dict, ws: websockets.WebSocketServerProtocol):
         if isinstance(msg, Dict) and msg.get('action'):
+            # TODO: try dict
             if msg['action'] == 'get_all_trades':
                 return self.send_trades(ws)
             elif msg['action'] == 'get_all_positions':
@@ -442,11 +439,7 @@ class IBWS:
       
     async def global_check(self): # check if there is no user and no processing event, if so , disconnect
         while True:
-            await asyncio.sleep(120)
-            # print('USER:', self.USER)
-            # print('BAR2USER:', self.BAR2USER)
-            # print("TICK2USER:", self.TICK2USER)
-            # print('bars', [{reqId: sub.updateEvent} for reqId, sub in self.ib.wrapper.reqId2Subscriber.items()])
+            await asyncio.sleep(300)
             if self.USER:  # check if has user
                 continue
 
