@@ -7,9 +7,9 @@
 			<v-divider inset vertical></v-divider>
 			<v-col cols="3">
 				<v-card>
-					<OrderBook />
-					<CostRef />
-					<PlaceOrderTab />	
+					<OrderBook v-on:attach-price="setOrderBaseOnAttachPrice"/>
+					<CostRef v-on:cost-reference="setOrderBaseOnCost"/>
+					<PlaceOrderTab ref="ot"/>	
 				</v-card>		
 			</v-col>
 		</v-row>
@@ -31,6 +31,14 @@ export default {
 		},
 	computed: {
 
+	},
+	methods: {
+		setOrderBaseOnCost(cost) {
+			this.$refs.ot.setOrderBaseOnCost(cost)
+		},
+		setOrderBaseOnAttachPrice(price) {
+			this.$refs.ot.setOrderBaseOnAttachPrice(price)
+		}
 	},
 	data(){
 		return {

@@ -56,9 +56,7 @@ export default {
                 return
             }
 
-            console.log(cost)
-
-            this.$bus.$emit('costReference', cost)
+            // this.$bus.$emit('costReference', cost)
             this.$emit('cost-reference', cost)
         }
     },

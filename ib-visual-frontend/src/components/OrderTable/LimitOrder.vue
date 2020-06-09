@@ -78,8 +78,8 @@ export default {
         }
     },
     mounted() {
-        this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
-        this.$bus.$on('costReference', this.setOrderBaseOnCost)
+        // this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
+        // this.$bus.$on('costReference', this.setOrderBaseOnCost)
         axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['LimitOrder'])})
     },
     watch: {
@@ -106,8 +106,8 @@ export default {
         },
     },
     beforeDestroy() {
-        this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
-        this.$bus.$off('costReference', this.setOrderBaseOnCost)
+        // this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
+        // this.$bus.$off('costReference', this.setOrderBaseOnCost)
 	},
     methods: {
         insertOrder() {

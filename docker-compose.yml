@@ -4,7 +4,7 @@ services:
     build:
       context:  ./ib-visual-backend
       dockerfile: Dockerfile
-    image: hadrianl/ib-client_backend
+    image: hadrianl/ib-client_backend:${TAG}
     ports: 
       - "6789:6789"
     env_file:
@@ -17,7 +17,7 @@ services:
     build:
       context:  ./ib-visual-frontend
       dockerfile: Dockerfile
-    image: hadrianl/ib-client_frontend
+    image: hadrianl/ib-client_frontend:${TAG}
     ports:
       - "8080:8080"
     volumes: 

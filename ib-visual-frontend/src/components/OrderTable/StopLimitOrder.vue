@@ -95,8 +95,8 @@ export default {
         }
     },
     mounted() {
-        this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
-        this.$bus.$on('costReference', this.setOrderBaseOnCost)
+        // this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
+        // this.$bus.$on('costReference', this.setOrderBaseOnCost)
         axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['StopLimitOrder'])})
     },
     watch: {
@@ -135,8 +135,8 @@ export default {
         },
     },
     beforeDestroy() {
-        this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
-        this.$bus.$off('costReference', this.setOrderBaseOnCost)
+        // this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
+        // this.$bus.$off('costReference', this.setOrderBaseOnCost)
 	},
     methods: {
         insertOrder() {
@@ -188,7 +188,6 @@ export default {
 
         },
         setOrderBaseOnCost(cost) {
-            console.log(cost)
             this.volume = Math.abs(cost[1])
             this.attachPrice = cost[0]/cost[1]
             const avgCost = this.attachPrice
