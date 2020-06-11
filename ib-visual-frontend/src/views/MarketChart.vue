@@ -116,7 +116,6 @@ export default {
                         id: f.execution.permId,
                         size: 0.1,
                     }))
-            console.log(arr)
             arr.sort((a, b)=>a.time - b.time)
             return arr
         }
@@ -314,21 +313,21 @@ export default {
         cancelAll() {
             this.$ibws.send({'action': 'cancel_all'})
         },
-        handleTrade(t) {
+        handleTrade({contract, order, orderStatus}) {
             // check contract
-            if (t.contract.conId != this.contract.conId){
+            if (contract.conId != this.contract.conId){
                 return
             }
 
-            const key = orderKey(t.order.orderId, t.order.permId, t.order.clientId)
+            const key = orderKey(order)
             // remove the line when the order is done
-            if(['Cancelled', 'ApiCancelled', 'Filled'].indexOf(t.orderStatus.status) != -1){
+            if(['Cancelled', 'ApiCancelled', 'Filled'].indexOf(orderStatus.status) != -1){
                 if(this.orderLines[key]){
                     this.ohlcSeries.removePriceLine(this.orderLines[key])
                     delete this.orderLines[key]
                 }
                 
-                if(t.orderStatus.status == 'Filled'){
+                if(orderStatus.status == 'Filled'){
                     this.ohlcSeries.setMarkers(this.markers)
                 }
 
@@ -337,12 +336,12 @@ export default {
 
       
             let line_option = {}
-            switch(t.order.orderType){
+            switch(order.orderType){
             case 'LMT':
                 {
                     line_option = {
-                    price: t.order.lmtPrice,
-                    color: t.order.action == 'BUY'?'red':'green',
+                    price: order.lmtPrice,
+                    color: order.action == 'BUY'?'red':'green',
                     lineWidth: 2,
                     lineStyle: LineStyle.Dotted,
                     axisLabelVisible: true,
@@ -352,10 +351,10 @@ export default {
                 
             case 'STP LMT': case 'LIT':
                 {
-                    let isPreSubmitted = t.orderStatus.status == 'PreSubmitted'
+                    let isPreSubmitted = orderStatus.status == 'PreSubmitted'
                     line_option = {
-                        price: isPreSubmitted?t.order.auxPrice:t.order.lmtPrice,
-                        color: t.order.action == 'BUY'?'red':'green',
+                        price: isPreSubmitted?order.auxPrice:order.lmtPrice,
+                        color: order.action == 'BUY'?'red':'green',
                         lineWidth: 2,
                         lineStyle: isPreSubmitted?LineStyle.Dashed:LineStyle.Dotted,
                         axisLabelVisible: true,
@@ -364,10 +363,10 @@ export default {
                 }
             case 'TRAIL LIMIT':
                 {
-                    let isPreSubmitted = t.orderStatus.status == 'PreSubmitted'
+                    let isPreSubmitted = orderStatus.status == 'PreSubmitted'
                     line_option = {
-                        price: isPreSubmitted?t.order.trailStopPrice:t.order.lmtPrice,
-                        color: t.order.action == 'BUY'?'red':'green',
+                        price: isPreSubmitted?order.trailStopPrice:order.lmtPrice,
+                        color: order.action == 'BUY'?'red':'green',
                         lineWidth: 2,
                         lineStyle: isPreSubmitted?LineStyle.Dashed:LineStyle.Dotted,
                         axisLabelVisible: true,
@@ -376,13 +375,13 @@ export default {
                 }
                 }
 
-            if (this.orderLines[key]){
+            if (this.orderLines[key]) {
                 let line = this.orderLines[key]
                 line.applyOptions(line_option)
-            }else if(line_option) {
+            }else if (line_option) {
                 let line = this.ohlcSeries.createPriceLine(line_option)
                 this.orderLines[key] = line
-                }
+            }
         },
         handleBars(bars) {
             this.bars = bars
@@ -432,6 +431,7 @@ export default {
             }
         },
         extendBarsBackWard(bars) {
+            console.log('extendBarsBackWard')
             if (bars[bars.length - 1].time >= this.bars[0].time){
                 this.$bus.$emit('notice', {
                     color: 'error',
@@ -512,23 +512,23 @@ export default {
 
             this.action = ""
         },
-        onCrosshairMove(param) {
+        onCrosshairMove({time, point, seriesPrices}) {
             if (
-                param === undefined ||
-                param.time === undefined ||
-                param.point.x < 0 ||
-                param.point.x > this.$refs.barChart.clientWidth ||
-                param.point.y < 0 ||
-                param.point.y > this.$refs.barChart.clientHeight
+                !time ||
+                !point ||
+                point.x < 0 ||
+                point.x > this.$refs.barChart.clientWidth ||
+                point.y < 0 ||
+                point.y > this.$refs.barChart.clientHeight
             ) {
                 this.legend_bar = {time: NaN, open: NaN, high: NaN, low: NaN, close: NaN, volume: NaN}
                 this.legend_ma = {5: NaN, 10: NaN, 30: NaN, 60: NaN}
             }else{
-                this.legend_bar.time = param.time
-                Object.assign(this.legend_bar, param.seriesPrices.get(this.ohlcSeries))
-                this.legend_bar.volume = param.seriesPrices.get(this.volSeries)
+                this.legend_bar.time = time
+                Object.assign(this.legend_bar, seriesPrices.get(this.ohlcSeries))
+                this.legend_bar.volume = seriesPrices.get(this.volSeries)
                 for(let key in this.legend_ma) {
-                    this.legend_ma[key] = param.seriesPrices.get(this.maSeries[key])
+                    this.legend_ma[key] = seriesPrices.get(this.maSeries[key])
                 }
             }
         },
@@ -548,40 +548,44 @@ export default {
         },
         sendOrder(orderType, price, action, lastPrice) {
             // if no action , notice error
-            if(!(this.contract && action)) {
-                return
-            }
+            if(!(this.contract && action)) return
 
-            let order = new Order()
-            order.outsideRth = true
-            order.orderType = orderType
-            order.action = action
-            order.tif = 'GTC'
-            order.totalQuantity = parseInt(this.volume)
+            // let order = new Order()
+            // order.outsideRth = true
+            // order.orderType = orderType
+            // order.action = action
+            // order.tif = 'GTC'
+            // order.totalQuantity = parseInt(this.volume)
+
+            let order = null
 
             switch(orderType) {
                 case 'LMT':
                     {
-                        order.lmtPrice = parseInt(price)
-                        order.orderRef = `ct-${order.totalQuantity}@${order.lmtPrice}`
+                        // order.lmtPrice = parseInt(price)
+                        // order.orderRef = `ct-${order.totalQuantity}@${order.lmtPrice}`
+                        order = Order.NewLimitOrder(action, price, this.volume, '#ct')
                         break
                     }
                     
                 case 'STP LMT':
                     {
-                        let offset = parseInt(action == 'BUY'?this.offset:-this.offset)
-                        order.lmtPrice = parseInt(price)
-                        order.auxPrice = order.lmtPrice + offset
-                        order.orderRef = `ct-sl-${order.totalQuantity}@${order.auxPrice}->${order.lmtPrice}`
+                        // let offset = parseInt(action == 'BUY'?this.offset:-this.offset)
+                        // order.lmtPrice = parseInt(price)
+                        // order.auxPrice = order.lmtPrice + offset
+                        // order.orderRef = `ct-sl-${order.totalQuantity}@${order.auxPrice}->${order.lmtPrice}`
+                        let offset = action == 'BUY'?this.offset:-this.offset
+                        order = Order.NewStopLimitOrder(action, price, price + offset, this.volume, '#ct')
                         break
                     }
                 case 'TRAIL LIMIT':
                     {
-                        order.trailStopPrice = parseInt(price)
-                        order.auxPrice = Math.round(Math.abs(lastPrice - price))
-                        order.triggerMethod = 4
-                        order.lmtPriceOffset = parseInt(this.offset)
-                        order.orderRef = `ct-trailsl-${order.totalQuantity}@^${order.trailStopPrice}->${order.auxPrice}[${order.lmtPriceOffset}]`
+                        // order.trailStopPrice = parseInt(price)
+                        // order.auxPrice = Math.round(Math.abs(lastPrice - price))
+                        // order.triggerMethod = 4
+                        // order.lmtPriceOffset = parseInt(this.offset)
+                        // order.orderRef = `ct-trailsl-${order.totalQuantity}@^${order.trailStopPrice}->${order.auxPrice}[${order.lmtPriceOffset}]`
+                        order = Order.NewTrailStopOrder(action, price, this.offset, Math.abs(lastPrice-price), this.volume, '#ct')
                         break
                     }
                 default:

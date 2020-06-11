@@ -16,6 +16,9 @@ export default {
             ticker: {bid: NaN, ask: NaN, last: NaN, bidSize: NaN, askSize: NaN, lastSize: NaN, time: "", conId: NaN}
         }
     },
+    inject: [
+        "setOrderBaseOnAttachPrice"
+    ],
     computed: {
         contract() {
             return this.$store.state.currentContract
@@ -60,7 +63,8 @@ export default {
         },
         attachPriceClick(price) {
             // this.$bus.$emit('attachPrice', price)
-            this.$emit('attach-price', price)
+            this.setOrderBaseOnAttachPrice(price)
+            // this.$emit('attach-price', price)
         }
     },
     beforeDestroy() {

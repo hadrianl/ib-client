@@ -104,17 +104,13 @@ export default {
         }
     },
     mounted() {
-        // this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
-        // this.$bus.$on('costReference', this.setOrderBaseOnCost)
         axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['TrailStopOrder'])})
     },
     watch: {
         attachOffset(nVal) {
             // console.log(nVal)
             // console.log(oVal)
-            if (!(this.attachPrice&&nVal)) {
-                return
-            }
+            if (!(this.attachPrice&&nVal)) return
             switch(this.action) {
                 case 'BUY':
                     this.trailStopPrice = this.attachPrice + nVal
@@ -134,8 +130,7 @@ export default {
         },
     },
     beforeDestroy() {
-        // this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
-        // this.$bus.$off('costReference', this.setOrderBaseOnCost)
+
 	},
     methods: {
         insertOrder() {
@@ -162,32 +157,34 @@ export default {
 
             }
 
-            var order = new Order()
-            order.outsideRth = true
-            order.orderType = 'TRAIL LIMIT'
-            order.tif = 'GTC'
-            order.trailStopPrice = parseInt(this.trailStopPrice)
-            order.lmtPriceOffset = parseInt(this.lmtPriceOffset)
-            order.auxPrice = parseInt(this.trailAmount)
-            order.action = this.action
-            order.totalQuantity = parseInt(this.volume)
-            order.triggerMethod = 4
-            const ref = `trailsl-${order.totalQuantity}@^${order.trailStopPrice}->${order.auxPrice}[${order.lmtPriceOffset}]`
-            order.orderRef = ref + '-' +this.orderRef
+            // var order = new Order()
+            // order.outsideRth = true
+            // order.orderType = 'TRAIL LIMIT'
+            // order.tif = 'GTC'
+            // order.trailStopPrice = parseInt(this.trailStopPrice)
+            // order.lmtPriceOffset = parseInt(this.lmtPriceOffset)
+            // order.auxPrice = parseInt(this.trailAmount)
+            // order.action = this.action
+            // order.totalQuantity = parseInt(this.volume)
+            // order.triggerMethod = 4
+            // const ref = `trailsl-${order.totalQuantity}@^${order.trailStopPrice}->${order.auxPrice}[${order.lmtPriceOffset}]`
+            // order.orderRef = ref + '-' +this.orderRef
+            // this.orderRef = ''
+            let order = Order.NewTrailStopOrder(this.action, this.trailStopPrice, this.lmtPriceOffset, this.trailAmount, this.volume, this.orderRef)
             this.orderRef = ''
             console.log({'action': 'place_order', 'contract': contract, 'order': order})
             this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
 
 
         },
-        setOrderBaseOnCost(cost){
-            this.volume = Math.abs(cost[1])
-            this.attachPrice = cost[0]/cost[1]
+        setOrderBaseOnCost([totalValue, netPos]){
+            this.volume = Math.abs(netPos)
+            this.attachPrice = totalValue/netPos
             const avgCost = this.attachPrice
             const attachOffset = this.attachOffset
-            this.trailStopPrice = cost[1]>0? avgCost - attachOffset:avgCost + attachOffset
+            ;[this.trailStopPrice, this.action] = netPos>0? [avgCost - attachOffset, "SELL"]:[avgCost + attachOffset, "BUY"]
             this.trailAmount = attachOffset
-            this.action = cost[1]>0?"SELL":"BUY"
+            // this.action = netPos>0?"SELL":"BUY"
             this.orderRef = `Cost<@${avgCost}>`
         },
         setOrderBaseOnAttachPrice(price) {

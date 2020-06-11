@@ -172,28 +172,28 @@ export default {
                 return
             }
 
-            var order = new Order()
-            order.outsideRth = true
-            order.orderType = 'STP LMT'
-            order.tif = 'GTC'
-            order.lmtPrice = parseInt(this.limitPrice)
-            order.auxPrice = parseInt(this.stopPrice)
-            order.action = this.action
-            order.totalQuantity = parseInt(this.volume)
-            const ref = `sl-${order.totalQuantity}@${order.auxPrice}->${order.lmtPrice}`
-            order.orderRef = ref + '-' + this.orderRef
+            // var order = new Order()
+            // order.outsideRth = true
+            // order.orderType = 'STP LMT'
+            // order.tif = 'GTC'
+            // order.lmtPrice = parseInt(this.limitPrice)
+            // order.auxPrice = parseInt(this.stopPrice)
+            // order.action = this.action
+            // order.totalQuantity = parseInt(this.volume)
+            // const ref = `sl-${order.totalQuantity}@${order.auxPrice}->${order.lmtPrice}`
+            // order.orderRef = ref + '-' + this.orderRef
+            let order = Order.NewStopLimitOrder(this.action, this.limitPrice, this.stopPrice, this.volume, this.orderRef)
             console.log({'action': 'place_order', 'contract': contract, 'order': order})
             this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
 
 
         },
-        setOrderBaseOnCost(cost) {
-            this.volume = Math.abs(cost[1])
-            this.attachPrice = cost[0]/cost[1]
+        setOrderBaseOnCost([totalValue, netPos]) {
+            this.volume = Math.abs(netPos)
+            this.attachPrice = totalValue/netPos
             const avgCost = this.attachPrice
             const attachOffset = this.attachOffset
-            this.stopPrice = cost[1]>0? avgCost - attachOffset:avgCost + attachOffset
-            this.action = cost[1]>0?"SELL":"BUY"
+            ;[this.stopPrice, this.action] = netPos>0? [avgCost - attachOffset, "SELL"]:[avgCost + attachOffset, "BUY"]
             this.orderRef = `Cost<@${avgCost}>`
         },
         setOrderBaseOnAttachPrice(price) {

@@ -27,6 +27,9 @@ export default {
             cost: null,
         }
     },
+    inject: [
+        "setOrderBaseOnCost"
+    ],
     computed: {
         contract() {
             return this.$store.state.currentContract
@@ -57,7 +60,8 @@ export default {
             }
 
             // this.$bus.$emit('costReference', cost)
-            this.$emit('cost-reference', cost)
+            // this.$emit('cost-reference', cost)
+            this.setOrderBaseOnCost(cost)
         }
     },
 }

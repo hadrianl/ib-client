@@ -134,21 +134,60 @@ class Order {
         this.parentPermId = 0
         this.usePriceMgmtAlgo = false
     }
+    static NewLimitOrder(action, limitPrice, quantity, ref='', outsideRth=true, tif='GTC') {
+        let order = new Order()
+        order.outsideRth = outsideRth
+        order.orderType = 'LMT'
+        order.tif = tif
+        order.lmtPrice = parseInt(limitPrice)
+        order.action = action
+        order.totalQuantity = parseInt(quantity)
+        order.orderRef = `l-${order.totalQuantity}@${order.lmtPrice}-${ref}`
+        return order
+    }
+
+    static NewStopLimitOrder(action, limitPrice, auxPrice, quantity, ref='', outsideRth=true, tif='GTC') {
+        let order = new Order()
+        order.outsideRth = outsideRth
+        order.orderType = 'STP LMT'
+        order.tif = tif
+        order.lmtPrice = parseInt(limitPrice)
+        order.auxPrice = parseInt(auxPrice)
+        order.action = action
+        order.totalQuantity = parseInt(quantity)
+        order.orderRef = `sl-${order.totalQuantity}@${order.auxPrice}->${order.lmtPrice}-${ref}`
+        return order
+    }
+
+    static NewTrailStopOrder(action, trailStopPrice, lmtPriceOffset, trailAmount, quantity, ref='', outsideRth=true, tif='GTC') {
+        let order = new Order()
+        order.outsideRth = outsideRth
+        order.orderType = 'TRAIL LIMIT'
+        order.tif = tif
+        order.trailStopPrice = parseInt(trailStopPrice)
+        order.lmtPriceOffset = parseInt(lmtPriceOffset)
+        order.auxPrice = parseInt(trailAmount)
+        order.action = action
+        order.totalQuantity = parseInt(quantity)
+        order.triggerMethod = 4
+        order.orderRef = `trailsl-${order.totalQuantity}@^${order.trailStopPrice}->${order.auxPrice}[${order.lmtPriceOffset}]-${ref}`
+        return order
+    }
 }
 
 
 class OrderStatus {
-    PendingSubmit = 'PendingSubmit'
-    PendingCancel = 'PendingCancel'
-    PreSubmitted = 'PreSubmitted'
-    Submitted = 'Submitted'
-    ApiPending = 'ApiPending'
-    ApiCancelled = 'ApiCancelled'
-    Cancelled = 'Cancelled'
-    Filled = 'Filled'
-    Inactive = 'Inactive'
-    DoneStates = ['Filled', 'Cancelled', 'ApiCancelled']
-    ActiveStates = ['PendingSubmit', 'ApiPending', 'PreSubmitted', 'Submitted']
+    static PendingSubmit = 'PendingSubmit'
+    static PendingCancel = 'PendingCancel'
+    static PreSubmitted = 'PreSubmitted'
+    static Submitted = 'Submitted'
+    static ApiPending = 'ApiPending'
+    static ApiCancelled = 'ApiCancelled'
+    static Cancelled = 'Cancelled'
+    static Filled = 'Filled'
+    static Inactive = 'Inactive'
+    static DoneStates = ['Filled', 'Cancelled', 'ApiCancelled']
+    static ActiveStates = ['PendingSubmit', 'ApiPending', 'PreSubmitted', 'Submitted']
 
     constructor() {
         this.orderId = 0

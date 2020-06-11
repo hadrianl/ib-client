@@ -54,7 +54,7 @@ export default {
             
         },
         hasContract() {
-            return Boolean(this.$store.state.currentContract)
+            return !!this.$store.state.currentContract
         },
         itemsList() {
             let cl = []
@@ -73,7 +73,6 @@ export default {
     },
     methods: {
         clearItem() {
-            console.log('clearItem')
             this.$store.commit('clearContract')
             this.$emit('clear-contract')
         },
@@ -82,7 +81,7 @@ export default {
     },
     watch: {
         search(val) {
-            var ret = patt.exec(val)
+            let ret = patt.exec(val)
             if (ret) {
                 let flag = true
                 this.itemsList.forEach( c => {if(c.symbol === ret[0]) {flag = false}})

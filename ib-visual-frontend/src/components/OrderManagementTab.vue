@@ -13,7 +13,7 @@
                 <TradeTable height="350"/>
             </v-tab-item>
             <v-tab-item :key="2">
-                <FillTable height="350" />
+                <FillTable height="350"/>
             </v-tab-item>
             <v-tab-item :key="3">
                 <PortfolioTable height="350"/>
@@ -47,5 +47,7 @@ export default {
         PositionTable,
         AccountValuesTable,
     },
+    methods: {
+    }
 }
 </script>

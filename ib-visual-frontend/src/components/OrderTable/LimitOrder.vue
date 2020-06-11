@@ -78,14 +78,10 @@ export default {
         }
     },
     mounted() {
-        // this.$bus.$on('attachPrice', this.setOrderBaseOnAttachPrice)
-        // this.$bus.$on('costReference', this.setOrderBaseOnCost)
         axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['LimitOrder'])})
     },
     watch: {
         attachOffset(nVal) {
-            // console.log(nVal)
-            // console.log(oVal)
             if (!(this.attachPrice&&nVal)) {
                 return
             }
@@ -106,12 +102,10 @@ export default {
         },
     },
     beforeDestroy() {
-        // this.$bus.$off('attachPrice', this.setOrderBaseOnAttachPrice)
-        // this.$bus.$off('costReference', this.setOrderBaseOnCost)
+
 	},
     methods: {
         insertOrder() {
-            // const contract = this.$refs.contract.currentContract
             const contract = this.contract
             if (contract == null) {
                 this.$bus.$emit('notice', {
@@ -143,27 +137,28 @@ export default {
                 return
             }
 
-            var order = new Order()
-            order.outsideRth = true
-            order.orderType = 'LMT'
-            order.tif = 'GTC'
-            order.lmtPrice = parseInt(this.limitPrice)
-            order.action = this.action
-            order.totalQuantity = parseInt(this.volume)
-            const ref = `l-${order.totalQuantity}@${order.lmtPrice}`
-            order.orderRef = ref + '-' + this.orderRef
+            // var order = new Order()
+            // order.outsideRth = true
+            // order.orderType = 'LMT'
+            // order.tif = 'GTC'
+            // order.lmtPrice = parseInt(this.limitPrice)
+            // order.action = this.action
+            // order.totalQuantity = parseInt(this.volume)
+            // const ref = `l-${order.totalQuantity}@${order.lmtPrice}`
+            // order.orderRef = ref + '-' + this.orderRef
+            let order = Order.NewLimitOrder(this.action, this.limitPrice, this.volume, this.orderRef)
             console.log({'action': 'place_order', 'contract': contract, 'order': order})
             this.$ibws.send({'action': 'place_order', 'contract': contract, 'order': order})
 
 
         },
-        setOrderBaseOnCost(cost) {
-            this.volume = Math.abs(cost[1])
-            this.attachPrice = cost[0]/cost[1]
+        setOrderBaseOnCost([totalValue, netPos]) {
+            this.volume = Math.abs(netPos)
+            this.attachPrice = totalValue/netPos
             const avgCost = this.attachPrice
             const attachOffset = this.attachOffset
-            this.limitPrice = cost[1]>0? avgCost + attachOffset:avgCost - attachOffset
-            this.action = cost[1]>0?"SELL":"BUY"
+            ;[this.limitPrice, this.action] = netPos>0? [avgCost + attachOffset, "SELL"]:[avgCost - attachOffset, "BUY"] // the semicolon helps to seperate lines, make lint know that is destructure, not slice  
+            // this.action = netPos>0?"SELL":"BUY"
             this.orderRef = `Cost<@${avgCost}>`
         },
         setOrderBaseOnAttachPrice(price) {

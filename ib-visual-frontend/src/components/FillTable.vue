@@ -26,6 +26,9 @@
                 <p class='green--text'>Click to Select Contract!</p>
             </v-tooltip>
         </template>
+        <template v-slot:item.execution.price="{ item }">
+            <a @click.stop="setOrderBaseOnFill(item)">{{ item.execution.price }}</a>
+        </template>
     </v-data-table>
 </template>
 
@@ -102,17 +105,29 @@ export default {
                 defalut: "300"
 			},
         },
+    inject: [
+        "setOrderBaseOnCost",
+    ],
     created() {
 
     },
     computed: {
         fills() {
             return this.$store.state.fillsList
-        }
+        },
+        contract() {
+            return this.$store.state.currentContract
+        },
     },
     methods: {
-
-    }
+        setOrderBaseOnFill({contract, execution: {shares, price, side}}){
+            if (this.contract && contract.conId != this.contract.conId) return
+            console.log(contract.conId, shares, price, side)
+            let cost = side=='BOT'?[price * shares, shares]:[price * (-shares), -shares]
+            // this.$emit('cost-reference', cost)
+            this.setOrderBaseOnCost(cost)
+        },
+    },
 }
 </script>
 <style>

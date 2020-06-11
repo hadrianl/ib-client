@@ -20,11 +20,18 @@ class IBWebsocket extends EventEmitter {
     
     send (obj) {
         const objToJson = JSON.stringify(obj)
-        if (this.isReady()) {
-          this.ws.send(objToJson)
-        } else {
+        if (!this.isReady()) {
           this.queue.push(objToJson)
+          return
         }
+
+        this.ws.send(objToJson)
+
+        // if (this.isReady()) {
+        //   this.ws.send(objToJson)
+        // } else {
+        //   this.queue.push(objToJson)
+        // }
       }
 
     setUrl (hostname) {
@@ -56,17 +63,17 @@ class IBWebsocket extends EventEmitter {
           if (this.reconnectMaxTimes <= this.reconnectTimes) {
             clearTimeout(this.reconnectTask)
             this.emit('death', {msg: '超过重连次数' + this.reconnectMaxTimes})
-          } else {
-            this.reconnectTask = setTimeout(
-              () => {
-                if (this.ws.readyState === this.WebSocket.CLOSED) {
-                  this.init(true)
-                  this.emit('reconnect', {msg: '发起重连第 ' + this.reconnectTimes + ' 次'})
-                }
-              }, 
-              this.reconnectInterval)
+            return
           }
           
+          this.reconnectTask = setTimeout(
+            () => {
+              if (this.ws.readyState === this.WebSocket.CLOSED) {
+                this.init(true)
+                this.emit('reconnect', {msg: '发起重连第 ' + this.reconnectTimes + ' 次'})
+              }
+            }, 
+            this.reconnectInterval)  
         }
 
       this.ws.onerror = (error) => {
@@ -79,8 +86,8 @@ class IBWebsocket extends EventEmitter {
           if (this.reconnectTask) {
             clearTimeout(this.reconnectTask)
           }
-          while (this.queue.length > 0) {
-            if (this.ws.readyState !== 1) break
+          while (this.queue.length > 0 && this.ws.readyState == this.WebSocket.OPEN) {
+            // if (this.ws.readyState !== 1) break
             this.ws.send(this.queue.shift())
           }
         }

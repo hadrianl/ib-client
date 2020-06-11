@@ -3,7 +3,7 @@ import Vue from 'vue'
 
 Vue.use(Vuex)
 
-export function orderKey(orderId, permId, clientId) {
+export function orderKey({orderId, permId, clientId=0}) {
     if (orderId <= 0) {
         return String(permId)
     }else{
@@ -12,9 +12,9 @@ export function orderKey(orderId, permId, clientId) {
 }
 
 export function is_same_key(n_trade, o_trade) {
-    var nKey = orderKey(n_trade.order.orderId, n_trade.order.permId, n_trade.order.clientId)
-    var oKey = orderKey(o_trade.order.orderId, o_trade.order.permId, o_trade.order.clientId)
-    
+    var nKey = orderKey(n_trade.order)
+    var oKey = orderKey(o_trade.order)
+
     return nKey == oKey
 }
 
@@ -139,7 +139,6 @@ const store = new Vuex.Store({
     },
     mutations:{
         selectContract(state, contract) {
-            console.log(`selectContract: ${contract}`)
             state.currentContract = contract
         },
 
@@ -205,9 +204,15 @@ const store = new Vuex.Store({
         },
 
         initFills(state, fills) {
-            fills.forEach((v, i) => fills[i].time = new Date(v.time).getTime() / 1000 + 28800)
-            fills.sort((a, b) => a.time - b.time)
+            // fills.forEach((v, i) => fills[i].time = new Date(v.time).getTime() / 1000 + 28800)
+            // fills.sort((a, b) => a.time - b.time)
             state.fillsList = fills
+            .map(f => {
+                    f.time = new Date(f.time).getTime() / 1000 + 28800
+                    return f
+                    }
+                )
+            .sort((a, b) => a.time - b.time)
         },
 
         updateFill(state, fill) {
