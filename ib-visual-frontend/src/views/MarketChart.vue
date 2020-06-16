@@ -349,7 +349,7 @@ export default {
                     break
                 }
                 
-            case 'STP LMT': case 'LIT':
+            case 'STP LMT': case 'LIT': case 'STP':
                 {
                     let isPreSubmitted = orderStatus.status == 'PreSubmitted'
                     line_option = {

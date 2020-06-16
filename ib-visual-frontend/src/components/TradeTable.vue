@@ -10,7 +10,8 @@
     calculate-widths
     single-expand
     show-expand
-    sort-by="permId"
+    sort-by="order.permId"
+    sort-desc
     hide-default-footer
     class="elevation-1"
     >
@@ -25,7 +26,18 @@
             @click="cancelOrder(item.order)"
             color="error"
             small
-            >Cancel</v-btn>
+            >
+            <v-tooltip v-if="item.order.parentId" top>
+                <template v-slot:activator="{ on }">
+                    <v-icon x-small dense left v-on="on">
+                    mdi-format-list-bulleted-square
+                    </v-icon>
+                </template>
+                <span>
+                    parentID: {{item.order.parentId}}
+                </span>
+            </v-tooltip>  
+            Cancel</v-btn>
         </template>
         
     </v-data-table>
@@ -48,7 +60,7 @@ export default {
                     value: 'order.permId',
                     align: 'center',
                     sortable: true,
-                    sort: (a, b) => b-a
+                    sort: (a, b) => a-b
                 },
                 {
                     text: 'c',

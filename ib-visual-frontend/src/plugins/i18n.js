@@ -30,6 +30,7 @@ const messages = {
             trailStop: "TrailStop",
             maTrigger: "MATrigger",
             limit: "Limit",
+            bracket: "Bracket",
         },
         mainTab: {
             order: "ORDER",
@@ -72,7 +73,8 @@ const messages = {
             stopLoss: "停止限价",
             trailStop: "移动止损",
             maTrigger: "均线触发",
-            limit: "限价"
+            limit: "限价",
+            bracket: "包括单",
         },
         mainTab: {
             order: "订单",

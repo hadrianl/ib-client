@@ -174,6 +174,11 @@ class IBWS:
     async def place_order(self, contract: Contract, order: Order, ws: websockets.WebSocketServerProtocol):
         _ = self.ib.placeOrder(contract, order)
 
+    async def place_bracket_orders(self, contract: Contract, orderParam: Dict, ws: websockets.WebSocketServerProtocol):
+        orders = self.ib.bracketOrder(**orderParam)
+        for o in orders:
+            _ = self.ib.placeOrder(contract, o)
+
     async def cancel_order(self, order, ws):
         self.ib.cancelOrder(order)
 
@@ -363,23 +368,24 @@ class IBWS:
 
     def recvMsg2Handler(self, msg: Dict, ws: websockets.WebSocketServerProtocol):
         if isinstance(msg, Dict) and msg.get('action'):
-            # TODO: try dict
-            if msg['action'] == 'get_all_trades':
+            # TODO: try dict, long ugly control flow
+            action = msg['action']
+            if action == 'get_all_trades':
                 return self.send_trades(ws)
-            elif msg['action'] == 'get_all_positions':
+            elif action == 'get_all_positions':
                 return self.send_positions(ws)
-            elif msg['action'] == 'get_all_portfolio':
+            elif action == 'get_all_portfolio':
                 return self.send_portfolio(ws)
-            elif msg['action'] == 'get_all_fills':
+            elif action == 'get_all_fills':
                 return self.send_fills(ws)    
-            elif msg['action'] == 'get_contracts':
+            elif action == 'get_contracts':
                 contract = msg.get('data')
                 if contract:
                     contract = Contract(**contract)
                     return self.send_contracts(contract, ws)
-            elif msg['action'] == 'get_all_account_values':
+            elif action == 'get_all_account_values':
                 return self.send_account_values(ws)
-            elif msg['action'] == 'place_order':
+            elif action == 'place_order':
                 contract = msg.get('contract')
                 order = msg.get('order')
                 if contract and order:
@@ -387,13 +393,19 @@ class IBWS:
                     order['softDollarTier'] = SoftDollarTier(**order['softDollarTier'])
                     order = Order(**order)
                     return self.place_order(contract, order, ws)
-            elif msg['action'] == 'cancel_order':
+            elif action == 'place_bracket_orders':
+                orderParam = msg.get('orderParam')
+                contract = msg.get('contract')
+                if contract and orderParam:
+                    contract = Contract(**contract)
+                    return self.place_bracket_orders(contract, orderParam, ws)  
+            elif action == 'cancel_order':
                 order = msg.get('order')
                 if order:
                     order['softDollarTier'] = SoftDollarTier(**order['softDollarTier'])
                     order = Order(**order)
                     return self.cancel_order(order, ws)
-            elif msg['action'] == 'place_dynamic_order':
+            elif action == 'place_dynamic_order':
                 contract = msg.get('contract')
                 order = msg.get('order')
                 options = msg.get('options')
@@ -402,29 +414,29 @@ class IBWS:
                     order['softDollarTier'] = SoftDollarTier(**order['softDollarTier'])
                     order = Order(**order)
                     return self.place_dynamic_order(contract, order, options, ws)
-            elif msg['action'] == 'sub_klines':
+            elif action == 'sub_klines':
                 contract = msg.get('contract')
                 barSize = msg.get('barSize', '1 min')
                 if contract:
                     contract = Contract(**contract)
                     return self.sub_klines(contract, barSize, ws)
-            elif msg['action'] == 'unsub_klines':
+            elif action == 'unsub_klines':
                 contract = msg.get('contract')
                 barSize = msg.get('barSize', '1 min')
                 if contract:
                     contract = Contract(**contract)
                     return self.unsub_klines(contract, barSize, ws)
-            elif msg['action'] == 'sub_ticker':
+            elif action == 'sub_ticker':
                 contract = msg.get('contract')
                 if contract:
                     contract = Contract(**contract)
                     return self.sub_ticker(contract, ws)
-            elif msg['action'] == 'unsub_ticker':
+            elif action == 'unsub_ticker':
                 contract = msg.get('contract')
                 if contract:
                     contract = Contract(**contract)
                     return self.unsub_ticker(contract, ws)
-            elif msg['action'] == 'get_klines':
+            elif action == 'get_klines':
                 contract = msg.get('contract')
                 duration = msg.get('duration', '1 D')
                 end = msg.get('end')
@@ -432,9 +444,9 @@ class IBWS:
                 if contract and end:
                     contract = Contract(**contract)
                     return self.get_klines(contract, end, barSize, duration, ws)
-            elif msg['action'] == 'cancel_all':
+            elif action == 'cancel_all':
                 return self.cancel_all(ws)
-            elif msg['action'] == 'disconnect_ib':
+            elif action == 'disconnect_ib':
                 return self.disconnect_ib(ws)
       
     async def global_check(self): # check if there is no user and no processing event, if so , disconnect
