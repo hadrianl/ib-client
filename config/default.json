@@ -19,6 +19,20 @@
         "lmtOffset": 0,
         "triggerOffset": 0,
         "trigger": "ma60"
+    },
+    "LimitOrder": {
+        "volume": 1,
+        "limitPrice": 0,
+        "orderRef": "",
+        "attachOffset": 0
+    },
+    "BracketOrders": {
+        "volume": 1,
+        "limitPrice": 0,
+        "orderRef": "",
+        "attachOffset": 0,
+        "takeProfitOffset": 60,
+        "stopLossOffset": 30
     }
 }
 
