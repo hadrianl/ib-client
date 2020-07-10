@@ -5,6 +5,7 @@
     :items="fills"
     item-key="execution.execId"
     calculate-widths
+    disable-pagination
     sort-by="time"
     sort-desc
     hide-default-footer
