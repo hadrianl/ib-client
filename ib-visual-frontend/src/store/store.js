@@ -204,8 +204,6 @@ const store = new Vuex.Store({
         },
 
         initFills(state, fills) {
-            // fills.forEach((v, i) => fills[i].time = new Date(v.time).getTime() / 1000 + 28800)
-            // fills.sort((a, b) => a.time - b.time)
             state.fillsList = fills
             .map(f => {
                     f.time = new Date(f.time).getTime() / 1000 + 28800
@@ -217,6 +215,13 @@ const store = new Vuex.Store({
 
         updateFill(state, fill) {
             fill.time = new Date(fill.time).getTime() / 1000 + 28800
+            for(let i in state.fillsList){
+                if(state.fillsList[i].execution.execId == fill.execution.execId){
+                    state.fillsList.splice(i, 1, fill)
+                    return
+                }
+            }
+
             state.fillsList.push(fill)
         },
 

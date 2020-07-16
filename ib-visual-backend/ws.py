@@ -96,38 +96,47 @@ class IBWS:
             await c
     
     async def handle_account_event(self):
+        msg = {'t': 'account_value', 'data': None}
         async for a in self.ib.accountValueEvent.merge(self.ib.accountSummaryEvent):
-            msg = {'t': 'account_value', 'data': tree(a)}
+            msg['data'] = tree(a)
+            msg_json = json.dumps(msg)
             for u in self.USER:
-                await u.send(json.dumps(msg))
+                await u.send(msg_json)
 
     async def handle_trade_event(self, event_name: str):
         event = getattr(self.ib, event_name)
-
+        msg = {'t': 'trade', 'data': None}
         async for t in event:
             t.log = []
             # t.fills = []
-            msg = {'t': 'trade', 'data': tree(t)}
+            msg['data'] = tree(t)
+            msg_json = json.dumps(msg)
             for u in self.USER:
-                await u.send(json.dumps(msg))
+                await u.send(msg_json)
 
     async def handle_position_event(self):
+        msg = {'t': 'position', 'data': None}
         async for p in self.ib.positionEvent:
-            msg = {'t': 'position', 'data': tree(p)}
+            msg['data'] = tree(p)
+            msg_json = json.dumps(msg)
             for u in self.USER:
-                await u.send(json.dumps(msg))
+                await u.send(msg_json)
     
     async def handle_portfolioItem_event(self):
+        msg = {'t': 'portfolioItem', 'data': None}
         async for p in self.ib.updatePortfolioEvent:
-            msg = {'t': 'portfolioItem', 'data': tree(p)}
+            msg['data'] = tree(p)
+            msg_json = json.dumps(msg)
             for u in self.USER:
-                await u.send(json.dumps(msg))
+                await u.send(msg_json)
 
     async def handle_exec_event(self):
+        msg = {'t': 'fill', 'data': None}
         async for _, fill in self.ib.execDetailsEvent:
-            msg = {'t': 'fill', 'data': tree(fill)}
+            msg['data'] = tree(fill)
+            msg_json = json.dumps(msg)
             for u in self.USER:
-                await u.send(json.dumps(msg))
+                await u.send(msg_json)
 
     async def send_trades(self, ws: websockets.WebSocketServerProtocol):
         trades = self.ib.trades()
@@ -253,19 +262,20 @@ class IBWS:
         d = bars[-1]
         conId = bars.contract.conId
         barSize = bars.barSizeSetting
+        msg_json = json.dumps({
+            't': 'bar',
+            'data': {'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})
         for u in self.BAR2USER[(conId, barSize)]:
-            self.coroutine_queue.put_nowait(u.send(json.dumps({
-                't': 'bar',
-                'data': {'time': str(d.date), 'open': d.open, 'high': d.high, 'low': d.low, 'close': d.close, 'volume': d.volume, 'conId': bars.contract.conId}})))
+            self.coroutine_queue.put_nowait(u.send(msg_json))
 
     def send_ticker(self, ticker: Ticker):
         conId = ticker.contract.conId
-        for u in self.TICK2USER[conId]:
-            self.coroutine_queue.put_nowait(u.send(json.dumps({
+        msg_json = json.dumps({
                     't': 'ticker', 
                     'data': {'time': ticker.time.astimezone().isoformat(), 'bid': ticker.bid, 'bidSize': ticker.bidSize, 'ask': ticker.ask, 'askSize': ticker.askSize, 'last': ticker.last, 'lastSize': ticker.lastSize, 'conId': conId}
                     })
-                ))
+        for u in self.TICK2USER[conId]:
+            self.coroutine_queue.put_nowait(u.send(msg_json))
 
     async def place_dynamic_order(self, contract, order: Order, options: Dict, ws: websockets.WebSocketServerProtocol):
         trigger_type = options['type']
