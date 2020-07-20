@@ -1,5 +1,5 @@
 {
-    "StopLossOrder": {
+    "StopLimitOrder": {
         "volume": 1,
         "stopPrice": 0,
         "offset": 5,
