@@ -21,7 +21,7 @@
             "request": "launch",
             "program": "ib-visual-backend/main.py",
             "console": "integratedTerminal",
-            "args": ["localhost", "7497"]
+            "args": ["192.168.2.226", "4002"]
         }
     ]
 }
