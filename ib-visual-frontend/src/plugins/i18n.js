@@ -47,6 +47,9 @@ const messages = {
             connected: "Connected",
             disconnected: "Disconnected",
         },
+        utils: {
+            setCloseAll: "Set Close All Params"
+        }
     },
     zh: {
         nav: {
@@ -91,6 +94,9 @@ const messages = {
             connected: "已连接",
             disconnected: "未连接",
         },
+        utils: {
+            setCloseAll: "设置一键平仓参数"
+        }
     },
 }
 

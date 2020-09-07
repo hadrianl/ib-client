@@ -24,6 +24,15 @@
             <v-list-item>
                 <v-text-field v-model="orderRef" label="orderRef" placeholder="Order Ref" clearable dense></v-text-field>
             </v-list-item>
+            <v-btn 
+            color="error" 
+            @click="setClosePositionParams"
+            block
+            outlined
+            dense>
+                <v-icon>mdi-pencil</v-icon>
+                {{$t('utils.setCloseAll')}}
+            </v-btn>
             <v-list-item>
                 <v-btn-toggle
                 v-model="action" 
@@ -77,6 +86,9 @@ export default {
             valid: false,
         }
     },
+    inject: [
+        "getCurrentTicker"
+    ],
     mounted() {
         axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['LimitOrder'])})
     },
@@ -188,6 +200,27 @@ export default {
             axios.get('/config/default.json').then((response) => {Object.assign(this.$data, response.data['LimitOrder'])})
             // this.cost = null
         },
+        setClosePositionParams() {
+            if (!this.contract) return
+
+            let p = 0
+            for (let i in this.$store.state.portfolioList){
+                if ( this.$store.state.portfolioList[i].contract.conId === this.contract.conId){
+                    p = this.$store.state.portfolioList[i].position
+                    break
+                    }
+                }
+
+            if (p == 0) return
+
+            this.volume = Math.abs(p)
+            this.action = p <= 0?'BUY':'SELL'
+
+            let ticker = this.getCurrentTicker()
+            this.limitPrice = p <= 0?ticker.last + 5: ticker.last - 5
+            this.orderRef = `CloseAll<@${this.limitPrice}>`
+
+        }
 		}
 }
 </script>
