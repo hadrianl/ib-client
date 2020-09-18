@@ -10,6 +10,7 @@
                     <v-radio value="15 mins" label="15 mins"></v-radio>
                 </v-radio-group>
                 <v-spacer></v-spacer>
+                <v-btn @click="predict">{{$t('button.predict')}}</v-btn>
                 <v-switch v-model="isTrail" :label="$t('button.trail')" dark dense hide-details></v-switch>
                 <v-btn-toggle v-model="action" rounded dense class='mx-5'>
                     <v-btn value="BUY" color="red">{{$t('button.buy')}}</v-btn>
@@ -606,7 +607,37 @@ export default {
                     })
             }
         },
+        predict() {
+            let bs = this.ohlcSeries.series().bars()
+            let close = bs.vi.slice(bs.lastIndex()-120, bs.lastIndex()).map((v)=>v.value[3])
 
+            let temp_form = document.createElement("form")
+            temp_form.action = '../api/predict'
+            temp_form.target = '_blank'
+            temp_form.method = 'post'
+            temp_form.style.display = 'none'
+
+            let opt_data = document.createElement('textarea')
+            opt_data.name = "data"
+            opt_data.value = close
+
+            let opt_from = document.createElement('textarea')
+            opt_from.name = "from"
+            opt_from.value = '20180101'
+
+            document.body.appendChild(temp_form)
+            temp_form.appendChild(opt_data)
+            temp_form.appendChild(opt_from)
+            temp_form.submit()
+            document.body.removeChild(temp_form)
+
+
+            // this.$axios.post('../api/predict', {"data": close, "from": '20180101'}).then(
+            //     (res)=>{
+            //         console.log(res)
+            //         window.open()
+            //     })
+        },
     },
     beforeDestroy() {
         if (this.contract) {

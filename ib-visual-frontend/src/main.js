@@ -9,6 +9,7 @@ import vuetify from './plugins/vuetify.js'
 
 Vue.config.productionTip = false
 window.ibws = ibws
+console.log(process.env.APIURL)
 
 const vm = new Vue({
     store,

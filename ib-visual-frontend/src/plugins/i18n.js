@@ -18,6 +18,7 @@ const messages = {
             notSet: "Not Set",
             reset: "Reset",
             cancelAllOrders: "cancelAllOrders",
+            predict: "predict",
         },
         cost: {
             refCost: "Reference cost",
@@ -65,6 +66,7 @@ const messages = {
             notSet: "未设置",
             reset: "重置",
             cancelAllOrders: "取消全部订单",
+            predict: "预测",
         },
         cost: {
             refCost: "参考成本",
