@@ -34,6 +34,13 @@ const store = new Vuex.Store({
         availableTradesList: state => {
             return state.tradesList.filter(t => ['Cancelled', 'ApiCancelled'].indexOf(t.orderStatus.status) == -1)
         },
+        currentPortfolio: state => {
+            for (let i in state.portfolioList){
+                if (state.portfolioList[i].contract.conId === state.currentContract.conId){
+                        return state.portfolioList[i]
+                    }
+                }
+        },
         currentFillsList: state => {
             if(!state.currentContract){
                 return []

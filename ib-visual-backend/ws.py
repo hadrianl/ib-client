@@ -370,7 +370,8 @@ class IBWS:
                 logger.debug(f'Get msg: {message}')
                 handler = self.recvMsg2Handler(msg, ws)
                 if handler:
-                    await handler
+                    fut = asyncio.ensure_future(handler)
+                    await fut
         except Exception as e:
             logger.exception(f'middleware error: {e}')
         finally:

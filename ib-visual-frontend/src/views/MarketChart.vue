@@ -10,6 +10,7 @@
                     <v-radio value="15 mins" label="15 mins"></v-radio>
                 </v-radio-group>
                 <v-spacer></v-spacer>
+                <VaR :get_datas="get_datas"></VaR>
                 <Predict :get_datas="get_datas"></Predict>
                 <v-switch v-model="isTrail" :label="$t('button.trail')" dark dense hide-details></v-switch>
                 <v-btn-toggle v-model="action" rounded dense class='mx-5'>
@@ -90,11 +91,13 @@ import {Order} from '../plugins/datastructure.js'
 import {orderKey} from '../store/store.js'
 import Legend from '../components/charts/Legend.vue'
 import Predict from '../components/PredictStock.vue'
+import VaR from '../components/VaR.vue'
 
 export default {
     components: {
         Legend,
         Predict,
+        VaR,
     },
     props: {
 
@@ -609,10 +612,16 @@ export default {
                     })
             }
         },
-        get_datas() {
+        get_datas(n=120) {
             let bs = this.ohlcSeries.series().bars()
-            let close = bs.vi.slice(bs.lastIndex()-120, bs.lastIndex()).map((v)=>v.value[3])
-            return close
+            let close = []
+            let time = []
+            bs.vi.slice(bs.lastIndex()>=n?bs.lastIndex()-n:0, bs.lastIndex()).forEach((v)=>{
+                close.push(v.value[3]),
+                time.push(v.time.timestamp)
+                })
+            // console.log(close)
+            return {time, close}
         }
         
         // predict() {

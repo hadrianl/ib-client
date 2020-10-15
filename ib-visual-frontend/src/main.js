@@ -6,6 +6,7 @@ import i18n from './plugins/i18n.js'
 import store from './store/store.js'
 import router from './router/router.js'
 import vuetify from './plugins/vuetify.js'
+import './plugins/highcharts.js'
 
 Vue.config.productionTip = false
 window.ibws = ibws

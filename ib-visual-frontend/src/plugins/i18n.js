@@ -19,6 +19,7 @@ const messages = {
             reset: "Reset",
             cancelAllOrders: "cancelAllOrders",
             predict: "predict",
+            VaR: "VaR",
         },
         cost: {
             refCost: "Reference cost",
@@ -67,6 +68,7 @@ const messages = {
             reset: "重置",
             cancelAllOrders: "取消全部订单",
             predict: "预测",
+            VaR: "在险价值",
         },
         cost: {
             refCost: "参考成本",
