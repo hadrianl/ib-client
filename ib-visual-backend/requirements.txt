@@ -1,4 +1,6 @@
 ib_insync
 websockets
+influxdb
+requests
 TA-Lib
 python-dateutil

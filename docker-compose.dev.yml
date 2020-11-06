@@ -1,7 +1,10 @@
 version: '3'
 services: 
   backend:
-    image: hadrianl/ib-client_backend
+    build:
+      context:  ./ib-visual-backend
+      dockerfile: Dockerfile
+    image: hadrianl/ib-client_backend:${TAG}
     ports: 
       - 6789:6789
     env_file:
@@ -9,7 +12,10 @@ services:
     restart: on-failure
     command: python ./backend.py 
   data_recorder:
-    image: hadrianl/ib-client_backend
+    build:
+      context:  ./ib-visual-backend
+      dockerfile: Dockerfile
+    image: hadrianl/ib-client_backend:${TAG}
     environment:
       - RICURL=https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00001
     restart: on-failure
@@ -17,7 +23,10 @@ services:
       - influxdb
     command: python ./record_index_contribution.py
   frontend:
-    image: hadrianl/ib-client_frontend
+    build:
+      context:  ./ib-visual-frontend
+      dockerfile: Dockerfile
+    image: hadrianl/ib-client_frontend:${TAG}
     ports:
       - 8080:8080
     env_file:

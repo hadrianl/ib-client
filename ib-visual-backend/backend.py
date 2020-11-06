@@ -5,11 +5,11 @@
 # @File    : main
 
 from ws import IBWS
-import sys
+import os
 
 def main():
-    host = sys.argv[1]
-    port = int(sys.argv[2])
+    host = os.environ.get('IBHOST')
+    port = int(os.environ.get('IBPORT'))
     ibws = IBWS(host, port)
     ibws.run()
 

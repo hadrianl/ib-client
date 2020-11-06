@@ -1,16 +1,17 @@
 import Vue from 'vue'
 import App from './App.vue'
 import './plugins/eventBus.js'
+import './plugins/highcharts.js'
 import ibws from './plugins/websocket.js'
 import i18n from './plugins/i18n.js'
 import store from './store/store.js'
 import router from './router/router.js'
 import vuetify from './plugins/vuetify.js'
-import './plugins/highcharts.js'
 
 Vue.config.productionTip = false
 window.ibws = ibws
 console.log(process.env.APIURL)
+console.log(router)
 
 const vm = new Vue({
     store,

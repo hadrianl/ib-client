@@ -28,4 +28,4 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.douban.com/simple 
 
-CMD python ./main.py ${IBHOST} ${IBPORT}
+# CMD python ./backend.py 

@@ -135,7 +135,7 @@ export default {
             console.log(close)
             let params = {"data": close, "confidence": this.confidence, "windows": this.windows}
             if (this.isMonteCarlo) params['method'] = 'MonteCarlo'
-            this.$axios.post('../api/var', params).then(
+            this.axios.post('../api/var', params).then(
                 (res)=>{
                     console.log(res)
                     let VaR = res.data.VaR

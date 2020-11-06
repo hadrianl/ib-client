@@ -8,6 +8,7 @@ const messages = {
         nav: {
             trade: "Trade",
             market: "Market",
+            analysis: "Analysis",
         },
         button: {
             connect: "Connect",
@@ -57,6 +58,7 @@ const messages = {
         nav: {
             trade: "交易",
             market: "行情",
+            analysis: "分析",
         },
         button: {
             connect: "连接",

@@ -116,7 +116,9 @@ export default {
       currentPage: 0,
       items: [
         { icon: 'mdi-handshake', text: 'trade', path: '/main' },
-        { icon: 'mdi-trending-up', text: 'market' , path: '/market'}],
+        { icon: 'mdi-trending-up', text: 'market' , path: '/market'},
+        { icon: 'mdi-trending-down', text: 'analysis' , path: '/analysis'},
+        ],
       langItems: [
         {text: "English", value: "en"},
         {text: "中文", value: "zh"},

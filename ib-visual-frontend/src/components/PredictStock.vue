@@ -112,7 +112,7 @@ export default {
             console.log(this)
             let { close } =  this.get_datas()
             this.btn_disabled = true
-            this.$axios.post('../api/predict', {"data": close, "from": '20180101'}).then(
+            this.axios.post('../api/predict', {"data": close, "from": '20180101'}).then(
                 (res)=>{
                     let series = [
                         {
