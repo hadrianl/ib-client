@@ -9,13 +9,14 @@ WORKDIR /usr/src/app
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
-RUN apk add --no-cache wget build-base && \
+RUN apk add --no-cache wget build-base libxslt-dev && \
     wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
     tar -zxvf ta-lib-0.4.0-src.tar.gz && cd ta-lib/ && ./configure --prefix=/usr && \ 
     make && make install && \ 
     cd .. && rm -rf ta-lib-0.4.0-src.tar.gz ta-lib/ && \
-    pip install --no-cache-dir TA-Lib numpy -i https://pypi.douban.com/simple && \
-    apk del wget build-base
+    pip install --no-cache-dir TA-Lib numpy pandas lxml -i https://pypi.douban.com/simple && \
+    apk del wget build-base && \
+    apk add --no-cache libstdc++
 
 # set time zone
 RUN apk add tzdata && \

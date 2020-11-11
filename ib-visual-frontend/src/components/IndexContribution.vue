@@ -1,14 +1,24 @@
 <template>
-    <v-container fluid>
-        <v-row justify="space-between" no-gutters>
-            <v-col cols="8">
-                <highcharts :constructor-type="'stockChart'" :options="line_options"></highcharts>
-            </v-col>
-            <v-col cols="4">
-                <highcharts :options="treemap_options"></highcharts>
-            </v-col>
-        </v-row>
-    </v-container>
+    <v-card align-stretch>
+    <v-tabs vertical>
+      <v-tab>
+        {{$t('analysisTab.trend')}}
+      </v-tab>
+      <v-tab>
+        {{$t('analysisTab.heatmap')}}
+      </v-tab>
+      <v-tab-item>
+        <v-card flat>
+            <highcharts ref='sc' :constructor-type="'stockChart'" :options="line_options"></highcharts>
+        </v-card>
+      </v-tab-item>
+      <v-tab-item>
+        <v-card flat>
+            <highcharts ref='tm' :options="treemap_options"></highcharts>
+        </v-card>
+      </v-tab-item>
+    </v-tabs>
+  </v-card>
 </template>
 <script>
 import {InfluxDB} from 'influx'
@@ -16,10 +26,18 @@ import {InfluxDB} from 'influx'
 export default {
         data() {
             return {
+                // window: 0,
                 influxclient: null,
                 line_options: {
+                    chart: {
+                        height: window.innerHeight - 100,
+                        spacingRight: 50,
+                    },
                     title: {
                         text: 'HSI贡献度趋势',
+                    },
+                    credits: {
+                        enabled: false,
                     },
                     rangeSelector: {
                         enabled: false
@@ -30,29 +48,46 @@ export default {
                         align: 'right',
                         verticalAlign: 'middle'
                     },
-                    // xAxis: [
-                    //     {type: 'datetime'},
-                    // ],
+                    xAxis: [
+                        {type: 'datetime'},
+                    ],
+                    navigation: {
+                        buttonOptions: {
+                            align: 'left',
+                        },
+                    },
                     tooltip: {
                         split: false,
                     },
                     series: [],
                 },
                 treemap_options: {
+                    chart: {
+                        height: window.innerHeight - 100,
+                        spacingRight: 50,
+                    },
                     title: {
                         text: 'HSI贡献度热力图',
                     },
-                    xAxis: [
-                        {type: 'datetime'},
-                    ],
+                    credits: {
+                        enabled: false,
+                    },
+                    navigation: {
+                        buttonOptions: {
+                            align: 'left',
+                        },
+                    },
                     series: [],
+                    showCheckbox: true,
                 },
                 intervalTimer: null,
+                capitals: {},
             }
         },
         async mounted() {
             console.log('indecContribution mounted')
             this.influxclient = new InfluxDB({host: 'localhost', port: 8087, database: 'index_info'})
+            await this.getStockCapital()
             await this.updateLine()
             await this.updateHeatMap()
             this.intervalTimer = setInterval(async () => {
@@ -60,10 +95,11 @@ export default {
                 await this.updateHeatMap()
             }, 60000)
 
+            console.log(this)
         },
         methods: {
             async updateHeatMap() {
-                console.log('updateHeatMap')
+                // console.log('updateHeatMap')
                 const query_last_sql = "select last(contribution) from contribution where index_code='HSI' group by stock_code, stock_name"
                 // const query_last_sql = "show databases"
                 const ret = await this.influxclient.query(query_last_sql)
@@ -76,9 +112,11 @@ export default {
                         pointPadding: 3,
                         data: [],
                     }
-                ret.forEach(({last, stock_name, stock_code}) => treemap.data.push({name: stock_name, value: Math.abs(last), color: last>=0?'red':'green', drilldown: stock_code }))
+                ret.forEach(({last, stock_name, stock_code}) => {
+                    treemap.data.push({name: stock_name, value: Math.abs(last), color: last>=0?'red':'green', drilldown: stock_code })
+                })
                 this.treemap_options.series = [treemap]
-                console.log(this.treemap_options)
+                // console.log(this.treemap_options)
 
             },
             async updateLine() {
@@ -87,14 +125,30 @@ export default {
                 let series = []
                 
                 ret.groupRows.forEach(g => {
-                    let line = {type: 'line', name: g.tags['stock_name'], data: [], visible: true, id: g.tags['stock_code']}
+                    const stock_name = g.tags['stock_name']
+                    const stock_code = g.tags['stock_code']
+                    let line = {type: 'line', name: stock_name, data: [], visible: this.capitals[stock_code] < 10, id: stock_code, legendIndex: this.capitals[stock_code]}
                     g.rows.forEach(({time, contribution}) => line.data.push([time.getNanoTime()/1000000, contribution]))
                     series.push(line)
                     })
                 this.line_options.series = series
-                console.log(this.line_options)
+                // console.log(this.line_options)
 
-            }
+            },
+            async getStockCapital() {
+                const sql = "select last(capital) from stock_info group by stock_code, stock_name"
+                let ret = await this.influxclient.query(sql)
+                ret.sort((a, b) => b.last - a.last)
+
+                ret.forEach(({stock_code}, i) => this.capitals[stock_code] = i)
+                // console.log(this.capitals)
+            },
+            onTreeMapMouseOver() {
+
+            },
+            onTreeMapMouseOut() {
+
+            },
         },
         beforeDestroy() {
             console.log('beforeDestory')

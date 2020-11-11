@@ -42,6 +42,10 @@ const messages = {
             position: "POSITION",
             account: "ACCOUNT",
         },
+        analysisTab: {
+            trend: "TREND",
+            heatmap: "HEATMAP"
+        },
         placeHolder: {
             contractInput: "please input contract",
             triggerType: "trigger type"
@@ -91,6 +95,10 @@ const messages = {
             portfolio: "组合",
             position: "持仓",
             account: "账户",
+        },
+        analysisTab: {
+            trend: "贡献度趋势",
+            heatmap: "贡献度热力图"
         },
         placeHolder: {
             contractInput: "输入合约",
