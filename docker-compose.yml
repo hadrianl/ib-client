@@ -11,8 +11,6 @@ services:
   data_recorder:
     image: hadrianl/ib-client_backend
     environment:
-      - INFLUXDB_HOST=influxdb
-      - INFLUXDB_PORT=8087
       - RICURL=https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00001
     restart: on-failure
     depends_on:
