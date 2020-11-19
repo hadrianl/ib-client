@@ -9,7 +9,7 @@
       </v-tab>
       <v-tab-item>
         <v-card flat>
-            <highcharts ref='sc' :constructor-type="'stockChart'" :options="line_options"></highcharts>
+            <highcharts ref='sc' :options="line_options"></highcharts>
         </v-card>
       </v-tab-item>
       <v-tab-item>
@@ -100,7 +100,7 @@ export default {
         methods: {
             async updateHeatMap() {
                 // console.log('updateHeatMap')
-                const query_last_sql = "select last(contribution) from contribution where index_code='HSI' group by stock_code, stock_name"
+                const query_last_sql = "select last(contribution), time from contribution where index_code='HSI' group by stock_code, stock_name"
                 // const query_last_sql = "show databases"
                 const ret = await this.influxclient.query(query_last_sql)
                 let treemap = {
@@ -108,12 +108,14 @@ export default {
                         name: "HSI",
                         layoutAlgorithm: 'squarified',
                         alternateStartingDirection: true,
-                        title: 'test',
+                        tooltip: {
+                            pointFormat: '<b>{point.time}</b><br/><br>{point.name}</br>: {point.y}<br/>'
+                        },
                         pointPadding: 3,
                         data: [],
                     }
-                ret.forEach(({last, stock_name, stock_code}) => {
-                    treemap.data.push({name: stock_name, value: Math.abs(last), color: last>=0?'red':'green', drilldown: stock_code })
+                ret.forEach(({last, stock_name, time}) => {
+                    treemap.data.push({name: stock_name, value: Math.abs(last), color: last>=0?'red':'green', time: time.toISOString(), y: last })
                 })
                 this.treemap_options.series = [treemap]
                 // console.log(this.treemap_options)

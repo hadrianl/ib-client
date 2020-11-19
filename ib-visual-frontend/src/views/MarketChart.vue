@@ -248,8 +248,6 @@ export default {
         if (this.contract){
             this.$ibws.send({'action': 'sub_klines', 'contract': this.contract})
         }
-        console.log(this)
-        console.log(this.ohlcSeries)
     },
     watch: {
         contract(newCon, oldCon) {

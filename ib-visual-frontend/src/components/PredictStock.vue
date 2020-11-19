@@ -1,47 +1,104 @@
 <template>
     <v-dialog 
-    v-model="showPredict"
-    eager
-    fullscreen
-    hide-overlay
-    transition="dialog-bottom-transition">
+    v-model="showParams"
+    >
         <template v-slot:activator="{ attrs }">
             <v-btn
             color="red lighten-2"
             dark
-            :disabled="btn_disabled"
             v-bind="attrs"
-            @click="predict"
+            @click="chose_params"
             >
             {{$t('button.predict')}}
             </v-btn>
         </template>
         <v-card>
-            <v-toolbar
-            dark
-            color="primary"
-            >
-            <v-btn
-                icon
-                dark
-                @click="showPredict = false"
-            >
-                <v-icon>mdi-close</v-icon>
-            </v-btn>
-            <v-toolbar-title>{{$t('button.predict')}}</v-toolbar-title>
-            <v-spacer></v-spacer>
-            <!-- <v-toolbar-items>
-                <v-btn
-                dark
-                text
-                @click="exportChart"
+            <v-card-title class="headline">
+            预测参数
+            </v-card-title>
+            <v-card-text>
+                <v-menu
+                    v-model="date_pick_menu"
+                    :close-on-content-click="false"
                 >
-                Export
-                </v-btn>
-            </v-toolbar-items> -->
-            </v-toolbar>
-            <!-- <HighCharts ref="highchart" id="container"></HighCharts> -->
-            <highcharts ref="hc" :options="options"></highcharts>
+                    <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                            v-model="date"
+                            label="Pick Start Date"
+                            prepend-icon="mdi-calendar"
+                            readonly
+                            v-bind="attrs"
+                            v-on="on"
+                        ></v-text-field>
+                    </template>
+                    <v-date-picker
+                    v-model="date"
+                    @input="date_pick_menu = false"
+                    ></v-date-picker>
+                </v-menu>
+                <v-slider
+                v-model="slider"
+                :max="600"
+                :min="120"
+                hide-details
+                >
+                    <template v-slot:append>
+                    <v-text-field
+                        v-model="slider"
+                        hide-details
+                        single-line
+                        type="number"
+                    ></v-text-field>
+                    </template>
+                </v-slider>
+            </v-card-text>
+            <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-dialog 
+                v-model="showPredict"
+                eager
+                fullscreen
+                hide-overlay
+                transition="dialog-bottom-transition">
+                    <template v-slot:activator="{ attrs }">
+                        <v-btn
+                        color="red lighten-2"
+                        dark
+                        :disabled="btn_disabled"
+                        v-bind="attrs"
+                        @click="predict"
+                        >
+                        ok
+                        </v-btn>
+                    </template>
+                    <v-card>
+                        <v-toolbar
+                        dark
+                        color="primary"
+                        >
+                        <v-btn
+                            icon
+                            dark
+                            @click="showPredict = false"
+                        >
+                            <v-icon>mdi-close</v-icon>
+                        </v-btn>
+                        <v-toolbar-title>{{$t('button.predict')}}</v-toolbar-title>
+                        <v-spacer></v-spacer>
+                        <v-toolbar-items>
+                            <v-btn
+                            dark
+                            text
+                            @click="exportChart"
+                            >
+                            Export
+                            </v-btn>
+                        </v-toolbar-items>
+                        </v-toolbar>
+                        <highcharts ref="hc" :options="options"></highcharts>
+                    </v-card>
+                </v-dialog>
+            </v-card-actions>
         </v-card>
     </v-dialog>
 </template>
@@ -55,6 +112,8 @@ export default {
     data() {
         return {
             btn_disabled: false,
+            date: '2018-01-01',
+            slider: 120,
             options: {
                 chart: {
                     type: 'line'
@@ -100,6 +159,8 @@ export default {
                 }
             },
             showPredict: false,
+            showParams: false,
+            date_pick_menu: false,
             }
     },
     props: [
@@ -110,9 +171,9 @@ export default {
     methods: {
         predict() {
             console.log(this)
-            let { close } =  this.get_datas()
+            let { close } =  this.get_datas(this.slider)
             this.btn_disabled = true
-            this.axios.post('../api/predict', {"data": close, "from": '20180101'}).then(
+            this.axios.post('../api/predict', {"data": close, "from": this.date}).then(
                 (res)=>{
                     let series = [
                         {
@@ -172,14 +233,19 @@ export default {
                     this.options.series = series
                     console.log(series)
                     this.showPredict = true
-                }).then(()=>{this.btn_disabled = false}).catch(err => {
+                }).then(()=>{
+                    this.btn_disabled = false
+                    }).catch(err => {
                     console.log(err)
                     this.btn_disabled = false
                 })
         },
+        chose_params() {
+            this.showParams = true
+        },
         exportChart() {
             console.log(this.$refs.hc)
-            this.$refs.hc.chart.exportChartLocal({type: 'image/svg+xml', filename: 'hsi_predict', scale: 4})
+            this.$refs.hc.chart.exportChartLocal({type: 'image/svg+xml', filename: `hsi_predict-${new Date().toJSON()}`, scale: 4})
         }
     },
 

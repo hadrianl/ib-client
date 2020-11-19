@@ -32,6 +32,9 @@ def cv(s):
     s2n = {'%': 0.01, '百': 100, '千': 1000, '万': 10_000, '亿': 100_000_000}
     m = re.fullmatch(r'([\+-]*[1-9][\d|,]*\.?\d*|[\+-]*0\.\d*)([%|百|千|万|亿]*)', s)
 
+    if not m:
+        return 0
+        
     return float(m[1].replace(',', '')) * reduce(lambda x, y: x*y, map(s2n.get, m[2]), 1)
 
 
@@ -64,7 +67,6 @@ if __name__ == "__main__":
         ret = db_client.write_points(points)
         print(f'write stock info points result: {ret}')
     except Exception as e:
-        raise e
         print(f'get stock capital failed:{e}')
 
     print(f'get url: {url}')

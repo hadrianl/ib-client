@@ -58,9 +58,9 @@
       </v-list>
     </v-menu>
     </v-app-bar>
-    <v-content>
+    <v-main>
         <router-view></router-view>
-    </v-content>
+    </v-main>
     <v-snackbar 
     v-model="snackbar.isShow"
     :color="snackbar.color"
