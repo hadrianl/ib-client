@@ -1,21 +1,27 @@
 <template>
-    <v-dialog 
-    v-model="showParams"
+    <div class="text-center">
+    <v-menu
+      v-model="showParams"
+      :close-on-content-click="true"
+      :nudge-width="200"
+      offset-x
     >
-        <template v-slot:activator="{ attrs }">
-            <v-btn
-            color="red lighten-2"
-            dark
-            v-bind="attrs"
-            @click="chose_params"
-            >
-            {{$t('button.predict')}}
-            </v-btn>
-        </template>
-        <v-card>
+      <template v-slot:activator="{ on, attrs }">
+        <v-btn
+          color="red lighten-2"
+          dark
+          v-bind="attrs"
+          v-on="on"
+        >
+          {{$t('button.predict')}}
+        </v-btn>
+      </template>
+
+      <v-card>
             <v-card-title class="headline">
             预测参数
             </v-card-title>
+            <v-divider></v-divider>
             <v-card-text>
                 <v-menu
                     v-model="date_pick_menu"
@@ -100,7 +106,9 @@
                 </v-dialog>
             </v-card-actions>
         </v-card>
-    </v-dialog>
+    </v-menu>
+    </div>
+
 </template>
 <script>
 // import HighCharts from './charts/HighChart.vue'
@@ -116,11 +124,16 @@ export default {
             slider: 120,
             options: {
                 chart: {
-                    type: 'line'
+                    height: window.innerHeight - 100,
+                    width: window.innerWidth - 100,
+                    type: 'line',
                 },
                 title: {
-				text: 'HSI预测'
+                    text: 'HSI预测',
                 },
+                credits: {
+                    enabled: false,
+                    },
                 legend: {
                         layout: 'vertical',
                         align: 'right',
@@ -140,7 +153,7 @@ export default {
                                         legend: {
                                                 layout: 'horizontal',
                                                 align: 'center',
-                                                verticalAlign: 'bottom'
+                                                verticalAlign: 'bottom',
                                         }
                                 }
                         }]

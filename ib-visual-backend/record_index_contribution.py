@@ -41,15 +41,14 @@ def cv(s):
 if __name__ == "__main__":
     host = os.environ.get('INFLUXDB_HOST', 'influxdb')
     port = os.environ.get('INFLUXDB_PORT', '8086')
-    url = os.environ.get('RICURL')
+    url = os.environ.get('RICURL', 'https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00001')
+    cap_url = os.environ.get('CAPURL', 'http://www.aastocks.com/sc/stocks/market/index/hk-index-con.aspx?index=HSI&t=1&s=1&o=1&p=4&hk=0&export=1')
     db_client = influxdb.InfluxDBClient(host, int(port))
     db_client.create_database('index_info')
     db_client.switch_database('index_info')
     
     try:
-        table = pd.read_html(
-        'http://www.aastocks.com/sc/stocks/market/index/hk-index-con.aspx?index=HSI&t=1&s=1&o=1&p=4&hk=0&export=1', 
-        header=0, index_col=0, converters={i:cv for i in [3, 4, 5, 8, 9]})[0]
+        table = pd.read_html(cap_url, header=0, index_col=0, converters={i:cv for i in [3, 4, 5, 8, 9]})[0]
         points = []
         for name_code, rows in table.iterrows():
             name, code = name_code.split('  ')

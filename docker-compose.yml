@@ -12,6 +12,7 @@ services:
     image: hadrianl/ib-client_backend
     environment:
       - RICURL=https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00001
+      - CAPURL=http://www.aastocks.com/sc/stocks/market/index/hk-index-con.aspx?index=HSI&t=1&s=1&o=1&p=4&hk=0&export=1
     restart: on-failure
     depends_on:
       - influxdb

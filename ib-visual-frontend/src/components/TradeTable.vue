@@ -22,7 +22,7 @@
         </template>
         <template v-slot:item.operation="{ item }">
             <v-btn 
-            v-if="isDone(item.orderStatus.status)"
+            v-if="!isDone(item.orderStatus.status)"
             @click="cancelOrder(item.order)"
             color="error"
             small
@@ -148,7 +148,7 @@ export default {
     },
     methods: {
         isDone(status) {
-            return ['Cancelled', 'ApiCancelled', 'Filled'].indexOf(status) == -1
+            return ['Cancelled', 'ApiCancelled', 'Filled'].includes(status)
         },
         cancelOrder(order) {
             this.$ibws.send({'action': 'cancel_order', 'order': order})

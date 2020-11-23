@@ -10,7 +10,7 @@
         <template v-slot:item.contract="{ item }">
             <v-tooltip right>
                 <template v-slot:activator="{ on }">
-                    <a v-on="on" @click.stop="$store.commit('addContract', item.contract);$store.commit('selectContract', item.contract)">{{ item.contract.localSymbol }}</a>
+                    <a v-on="on" @click.stop="setContract(item.contract)">{{ item.contract.localSymbol }}</a>
                 </template>
                 <h1 class='blue--text'>{{ item.contract.localSymbol }}</h1>
                 <ul>
@@ -63,7 +63,10 @@ export default {
         }
     },
     methods: {
-
+        setContract(contract) {
+            this.$store.commit('addContract', contract)
+            this.$store.commit('selectContract', contract)
+        }
     }
         }
 </script>

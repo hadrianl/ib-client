@@ -85,8 +85,10 @@ export default {
             }
         },
         async mounted() {
-            console.log('indecContribution mounted')
-            this.influxclient = new InfluxDB({host: 'localhost', port: 8087, database: 'index_info'})
+            const host = 'localhost'
+            const port = 8087
+            const database = 'index_info'
+            this.influxclient = new InfluxDB({host, port, database})
             await this.getStockCapital()
             await this.updateLine()
             await this.updateHeatMap()

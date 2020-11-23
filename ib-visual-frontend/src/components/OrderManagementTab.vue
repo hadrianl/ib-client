@@ -1,6 +1,6 @@
 <template>
     <v-card>
-        <v-tabs v-model="tab" slider-size="2" slider-color='blue'>
+        <v-tabs v-model="tab" slider-size="2" slider-color='blue' fixed-tabs>
             <v-tab :key="1">{{$t('mainTab.order')}}</v-tab>
             <v-tab :key="2">{{$t('mainTab.fill')}}</v-tab>
             <v-tab :key="3">{{$t('mainTab.portfolio')}}</v-tab>
