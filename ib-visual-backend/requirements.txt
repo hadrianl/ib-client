@@ -3,4 +3,5 @@ websockets
 influxdb
 requests
 TA-Lib
+flask
 python-dateutil

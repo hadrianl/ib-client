@@ -8,6 +8,13 @@ services:
       - ib.env
     restart: on-failure
     command: python ./backend.py 
+  extra_service:
+    image: hadrianl/ib-client_backend
+    ports:
+      - 5001:5000
+    environment:
+      - FLASK_APP=service.py
+    command: python -m flask run --host=0.0.0.0
   data_recorder:
     image: hadrianl/ib-client_backend
     environment:

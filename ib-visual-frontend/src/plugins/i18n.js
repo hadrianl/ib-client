@@ -9,6 +9,7 @@ const messages = {
             trade: "Trade",
             market: "Market",
             analysis: "Analysis",
+            extra: "Extra",
         },
         button: {
             connect: "Connect",
@@ -63,6 +64,7 @@ const messages = {
             trade: "交易",
             market: "行情",
             analysis: "分析",
+            extra: "附加",
         },
         button: {
             connect: "连接",

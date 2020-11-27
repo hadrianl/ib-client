@@ -19,7 +19,7 @@
             "name": "python backend",
             "type": "python",
             "request": "launch",
-            "program": "ib-visual-backend/backend.py",
+            "program": "${workspaceRoot}/ib-visual-backend/backend.py",
             "console": "integratedTerminal",
             "env": {"IBHOST": "192.168.2.226", "IBPORT": "4002"},
         },
@@ -27,10 +27,27 @@
             "name": "python record",
             "type": "python",
             "request": "launch",
-            "program": "ib-visual-backend/record_index_contribution.py",
+            "program": "${workspaceRoot}/ib-visual-backend/record_index_contribution.py",
             "console": "integratedTerminal",
             "env": {
                 "RICURL": "https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00001",
+                "INFLUXDB_HOST": "localhost",
+                "INFLUXDB_PORT": "8087",
+            },
+        },
+        {
+            "name": "python service",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "console": "integratedTerminal",
+            "args": [  
+                "run",  
+                "--host=0.0.0.0",
+                "--port=5001"
+            ],
+            "env": {
+                "FLASK_APP": "${workspaceRoot}/ib-visual-backend/service.py",
                 "INFLUXDB_HOST": "localhost",
                 "INFLUXDB_PORT": "8087",
             },

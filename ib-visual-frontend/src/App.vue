@@ -118,6 +118,7 @@ export default {
         { icon: 'mdi-handshake', text: 'trade', path: '/main' },
         { icon: 'mdi-trending-up', text: 'market' , path: '/market'},
         { icon: 'mdi-trending-down', text: 'analysis' , path: '/analysis'},
+        { icon: 'mdi-trending-down', text: 'extra' , path: '/extra'},
         ],
       langItems: [
         {text: "English", value: "en"},

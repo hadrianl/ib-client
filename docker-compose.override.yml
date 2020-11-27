@@ -5,6 +5,14 @@ services:
       context:  ./ib-visual-backend
       dockerfile: Dockerfile
     image: hadrianl/ib-client_backend:${TAG}
+  extra_service:
+    build:
+      context:  ./ib-visual-backend
+      dockerfile: Dockerfile
+    environment:
+      - INFLUXDB_HOST=influxdb
+      - INFLUXDB_PORT=8086
+    image: hadrianl/ib-client_backend:${TAG}
   data_recorder:
     build:
       context:  ./ib-visual-backend

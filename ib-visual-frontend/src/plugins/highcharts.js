@@ -8,6 +8,11 @@ import treemapInit from 'highcharts/modules/treemap'
 import offlineExportingInit from 'highcharts/modules/offline-exporting'
 import HighchartsVue from 'highcharts-vue'
 
+Highcharts.setOptions({
+    global: {
+        timezoneOffset: -8 * 60,
+    }
+})
 stockInit(Highcharts)
 exportingInit(Highcharts)
 // drilldownInit(Highcharts)

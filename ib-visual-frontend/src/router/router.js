@@ -11,7 +11,7 @@ const routes = [
     {path: '/', component: MainChart},
     {path: '/main', component: MainChart},
     {path: '/market', component: MarketChart},
-    {name: 'extrachart', path: '/extrachart', component: ExtraChart},
+    {path: '/extra', component: ExtraChart},
     {path: '/analysis', component: AnalysisChart},
 ]
 
