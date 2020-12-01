@@ -25,8 +25,16 @@ module.exports = {
               changOrigin: true,
               pathRewrite: {
                   '^/extra': ''
-              }
-          },
+              },
+            },
+            '/influxdb': {
+              target: 'http://localhost:8087/',
+              ws: true,
+              changOrigin: true,
+              pathRewrite: {
+                  '^/influxdb': ''
+              },
+            },
         }
     }
 

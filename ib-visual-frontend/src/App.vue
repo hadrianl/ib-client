@@ -59,7 +59,10 @@
     </v-menu>
     </v-app-bar>
     <v-main>
-        <router-view></router-view>
+      <keep-alive>
+        <router-view v-if="$route.meta.keepAlive"></router-view>
+      </keep-alive>
+      <router-view v-if="!$route.meta.keepAlive"></router-view> 
     </v-main>
     <v-snackbar 
     v-model="snackbar.isShow"

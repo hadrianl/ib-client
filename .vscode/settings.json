@@ -1,0 +1,13 @@
+{
+    "editor.mouseWheelZoom": true, //按 ctrl 键是代码字体缩放
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    },
+    "vetur.format.defaultFormatter.html": "js-beautify-html", //格式化.vue中html
+    "eslint.validate": [
+        "javascript",
+        "vue",
+        "javascriptreact",
+        "html",
+    ],
+}

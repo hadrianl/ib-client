@@ -72,6 +72,7 @@ def get_stock_klines():
     _type = request.args.get('type', 'before')
     count = request.args.get('count', '-284')
 
+
     if not ( stock_code and begin):
         return
 
@@ -79,6 +80,7 @@ def get_stock_klines():
         begin = int(parser.parse(begin).timestamp()*1000)
 
     params = {'symbol': stock_code, 'begin': begin, 'period': period, 'type': _type, 'count': count, 'indicator': 'kline'}
+
     ret = requests.get(kline_url, params=params, headers=headers, cookies=session.get('xq_cookies'))
     if ret.ok:
         return jsonify(ret.json())
