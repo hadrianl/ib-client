@@ -56,11 +56,30 @@
             </a>
         </template>
         <template v-slot:top>
-        <v-toolbar flat>
-            <v-btn icon @click="refresh">
-                <v-icon>mdi-update</v-icon>
-            </v-btn>
-        </v-toolbar>
+        <v-card>
+            <v-toolbar 
+            flat>
+                <v-btn icon @click="refresh">
+                    <v-icon>mdi-update</v-icon>
+                </v-btn>
+                <v-spacer></v-spacer>
+                <v-chip outlined label>Total Up Rate: <span :class="totalUpRate>=0.5?'red--text':'green--text'">{{ (totalUpRate*100).toFixed(2)}}</span> %</v-chip>
+            </v-toolbar>
+            <v-sheet>
+            <v-sparkline
+                :key="String(totalUpRate)"
+                :value="upRateDistru"
+                :gradient="['green', 'red']"
+                :labels="['10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%']"
+                gradient-direction="left"
+                type="bar"
+                auto-line-width
+                auto-draw
+                stroke-linecap="round"
+            ></v-sparkline>
+            </v-sheet>
+            <!-- <div>{{upRateDistru}}</div> -->
+        </v-card>
         </template>
     </v-data-table>
 </template>
@@ -140,27 +159,44 @@ export default {
                 },
             ],
             data: [],
+            upRateDistru: new Array(10).fill(0),
+            totalUpRate: NaN,
         }
     },
     created() {
 
     },
     mounted() {
+        console.log(this)
     },
     computed: {
+        // totalUpRate() {
+        //     const upper = this.data.map(({last_price, avg_price}) => last_price >= avg_price)
+        //     return upper?upper.reduce((p, c) => p + c, 0) / this.data.length:0
+        // },
     },
     methods: {
         async refresh() {
             this.data = []
+            
+            this.upRateDistru.fill(0)
             this.isloading = true
             let ret = await this.axios.get('../extra/index/component', {params: {name: "HSI"}})
+            let uppers = []
             Object.entries(ret.data).forEach(([code, {data: {items}, name}]) => {
                 const ur = items.filter(item => item.current>=item.avg_price).length/items.length
                 const last = items[items.length - 1].current
                 const avg = items[items.length - 1].avg_price
 
                 this.data.push({code: code, name: name, last_price: last, upper_rate: ur, avg_price: avg, data: items})
+
+                uppers.push(last > avg)
+
+                const ur_ = ur == 1?0.99:ur
+                this.upRateDistru[Math.floor(ur_*10)] += 1
             })
+
+            this.totalUpRate = uppers.reduce((p, c) => p + c, 0) / uppers.length
 
             this.isloading = false
         },

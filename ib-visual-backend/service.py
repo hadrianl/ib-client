@@ -8,6 +8,7 @@ import datetime as dt
 root_url = 'https://xueqiu.com/'
 minute_url = 'https://stock.xueqiu.com/v5/stock/chart/minute.json'
 kline_url = 'https://stock.xueqiu.com/v5/stock/chart/kline.json'
+search_stock_url = 'https://xueqiu.com/stock/search.json'
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'}
 
 def get_hk_minute(index_name):
@@ -43,8 +44,7 @@ with app.app_context():
 def set_cookies():
     if not session.get('xq_cookies'):
         session['xq_cookies'] = requests.head(root_url, headers=headers).cookies.get_dict()
-
-    print(session['xq_cookies'])
+        print(session['xq_cookies'])
 
 @app.route('/index/component/', methods=['GET'])
 def get_index_component_minutes():
@@ -82,6 +82,17 @@ def get_stock_klines():
     params = {'symbol': stock_code, 'begin': begin, 'period': period, 'type': _type, 'count': count, 'indicator': 'kline'}
 
     ret = requests.get(kline_url, params=params, headers=headers, cookies=session.get('xq_cookies'))
+    if ret.ok:
+        return jsonify(ret.json())
+
+@app.route('/stock/search', methods={'GET'})
+def search_stock():
+    stock_code = request.args.get('code')
+    size = request.args.get('size', '50')
+
+    params = {'code': stock_code, 'size': size}
+
+    ret = requests.get(search_stock_url, params=params, headers=headers, cookies=session.get('xq_cookies'))
     if ret.ok:
         return jsonify(ret.json())
 

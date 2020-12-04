@@ -3,18 +3,24 @@
         <v-toolbar color="indigo" dark dense class="d-flex justify-space-between">
             <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
-                    <v-text-field
+                    <v-autocomplete
                     label="symbol"
                     v-model="symbol"
+                    :items="itemsList"
+                    :search-input.sync="search"
+                    item-text= "name"
+                    item-value="code"
+                    :loading="searchloading"
+                    auto-select-first
                     outlined
                     dense
                     clearable
-                    validate-on-blur
+                    hide-no-data
                     placeholder="enter symbol"
                     hide-details="auto"
                     v-bind="attrs"
                     v-on="on"
-                    ></v-text-field>
+                    ></v-autocomplete>
                 </template>
                 <span>输入股票代码如：00700, SH601012, SZ002609</span>
             </v-tooltip>
@@ -45,6 +51,9 @@ export default {
     data() {
         return {
             symbol: "",
+            symbolList: [],
+            search: null,
+            searchloading: false,
             barCount: 284,
             period: "1m",
             periods: [
@@ -70,22 +79,6 @@ export default {
                 },
                 rangeSelector: {
                     enabled: false,
-                    buttons: [
-                        {
-                            type: 'minute',
-                            count: 60,
-                            text: '1h',
-                        }, 
-                        {
-                            type: 'minute',
-                            count: 120,
-                            text: '2h',
-                        }, 
-                        {
-                            type: 'all',
-                            text: 'All',
-                        },
-                    ],
                 },
                 credits: {
                     enabled: false,
@@ -95,19 +88,21 @@ export default {
                         align: 'right',
                         verticalAlign: 'middle'
                 },
-                yAxis:[{
-
-						height: '65%',
+                yAxis:[
+                    {
+                        height: '80%',
 						resize: {
-								enabled: true
+							enabled: true
 						},
-						lineWidth: 0
-				}, {
-						top: '65%',
-						height: '35%',
+                        lineWidth: 0
+                    }, 
+                    {
+						top: '80%',
+						height: '20%',
 						offset: 0,
-						lineWidth: 0
-				}],
+                        lineWidth: 0
+                    }
+                    ],
                 series: [
                     {
 						type: 'candlestick',
@@ -117,47 +112,71 @@ export default {
 						upColor: 'red',
 						upLineColor: 'red',
 						data: [],
-				},{
-						type: 'column',
-						data: [],
-						yAxis: 1,
-				}
-                ],
+                    },
+                    {
+                        type: 'column',
+                        name: 'volume',
+                        data: [],
+                        yAxis: 1,
+                    }
+                    ],
             },
         }
     },
     methods: {
         async updateChart() {
+            console.log(this.symbol)
             this.$refs.sc.chart.showLoading()
-            const params = {
-                code: this.symbol,
-                begin: Date.now(),
-                count: -this.barCount,
-                period: this.period,
+            try{
+                const params = {
+                    code: this.symbol,
+                    begin: Date.now(),
+                    count: -this.barCount,
+                    period: this.period,
+                }
+                const ret = await this.axios.get('../extra/stock/kline', {params})
+                
+                const result = ret.data
+
+                if (result.error_code != 0) throw result.error_description
+
+                // this.options.title.text = `${this.symbol}`
+                this.options.series[0].name = `${result.data.symbol}`
+                this.options.series[0].data = []
+                this.options.series[1].data = []
+
+                result.data.item.forEach(([timestamp, volume, open, high, low, close]) => {
+                    this.options.series[0].data.push([timestamp, open, high, low, close])
+                    this.options.series[1].data.push([timestamp, volume])
+                })
+            }finally{
+                this.$refs.sc.chart.hideLoading()
             }
-            const ret = await this.axios.get('../extra/stock/kline', {params})
-            this.$refs.sc.chart.hideLoading()
-            console.log(ret)
-
-            const result = ret.data
-
-            if (result.error_code != 0) throw result.error_description
-
-            // this.options.title.text = `${this.symbol}`
-            this.options.series[0].name = `${result.data.symbol}`
-            this.options.series[0].data = []
-            this.options.series[1].data = []
-
-            result.data.item.forEach(([timestamp, volume, open, high, low, close]) => {
-                this.options.series[0].data.push([timestamp, open, high, low, close])
-                this.options.series[1].data.push([timestamp, volume])
-            })
+            
         }
     },
-    // watch: {
-    //     symbol(nv) {
-    //         console.log(nv)
-    //     }
-    // }
+    computed: {
+        itemsList() {
+            return this.symbolList.map(({code, name}) => ({code, name:`${name}(${code})`}))
+        }
+    },
+    watch: {
+        async search(code) {
+            if (!code) {
+                this.symbolList =[]
+                return
+            }
+
+            this.searchloading = true
+            try{
+                const params = {code: code, size: 50}
+                const ret = await this.axios.get('../extra/stock/search', {params})
+                    
+                this.symbolList = ret.data.stocks || []
+            }finally{
+                this.searchloading = false
+            }
+        }
+    }
 }
 </script>
