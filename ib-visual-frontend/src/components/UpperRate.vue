@@ -50,6 +50,13 @@
                 {{ item.last_price }}
             </span>
         </template>
+        <template v-slot:item.percent="{ item }">
+            <span
+            :class="item.percent>=0?'red--text':'green--text'"
+            >
+                {{ item.percent }}%
+            </span>
+        </template>
         <template v-slot:item.code="{ item }">
             <a @click="$emit('select-code', item.code)">
                 {{ item.code }}
@@ -59,11 +66,22 @@
         <v-card>
             <v-toolbar 
             flat>
-                <v-btn icon @click="refresh">
+                <v-btn @click="refresh">
                     <v-icon>mdi-update</v-icon>
+                    {{ lastUpatedTime?lastUpatedTime.toLocaleTimeString():"" }}
                 </v-btn>
+                <v-col cols="5">
+                    <v-select 
+                    label="index symbol" 
+                    v-model="index_symbol" 
+                    @change="refresh" 
+                    :items="index_items"
+                    hide-details="auto"
+                    outlined
+                    dense></v-select>
+                </v-col>
                 <v-spacer></v-spacer>
-                <v-chip outlined label>Total Up Rate: <span :class="totalUpRate>=0.5?'red--text':'green--text'">{{ (totalUpRate*100).toFixed(2)}}</span> %</v-chip>
+                <v-chip outlined label>Up Rate: <span :class="totalUpRate>=0.5?'red--text':'green--text'">{{ (totalUpRate*100).toFixed(2)}}</span> %</v-chip>
             </v-toolbar>
             <v-sheet>
             <v-sparkline
@@ -87,6 +105,8 @@
 export default {
     data() {
         return {
+            index_symbol: "",
+            index_items: [],
             expanded: [],
             isloading: false,
             dialog: false,
@@ -153,6 +173,11 @@ export default {
                     align: 'center',
                 },
                 {
+                    text: 'percent',
+                    value: 'percent',
+                    align: 'center',
+                },
+                {
                     text: 'upper rate',
                     value: 'upper_rate',
                     align: 'center',
@@ -161,13 +186,16 @@ export default {
             data: [],
             upRateDistru: new Array(10).fill(0),
             totalUpRate: NaN,
+            lastUpatedTime: undefined,
         }
     },
     created() {
 
     },
-    mounted() {
+    async mounted() {
         console.log(this)
+        await this.getIndexes()
+        this.index_symbol = this.index_items[0]
     },
     computed: {
         // totalUpRate() {
@@ -178,27 +206,34 @@ export default {
     methods: {
         async refresh() {
             this.data = []
-            
             this.upRateDistru.fill(0)
+
+            if (!this.index_symbol) return
+            
             this.isloading = true
-            let ret = await this.axios.get('../extra/index/component', {params: {name: "HSI"}})
-            let uppers = []
-            Object.entries(ret.data).forEach(([code, {data: {items}, name}]) => {
-                const ur = items.filter(item => item.current>=item.avg_price).length/items.length
-                const last = items[items.length - 1].current
-                const avg = items[items.length - 1].avg_price
+            try{
+                let ret = await this.axios.get('../extra/index/component', {params: {name: this.index_symbol}})
+                let uppers = []
+                Object.entries(ret.data).forEach(([code, {data: {items}, name}]) => {
+                    const ur = items.filter(item => item.current>=item.avg_price).length/items.length
+                    const last = items[items.length - 1].current
+                    const avg = items[items.length - 1].avg_price
+                    const pc = items[items.length - 1].percent
 
-                this.data.push({code: code, name: name, last_price: last, upper_rate: ur, avg_price: avg, data: items})
+                    this.data.push({code: code, name: name, last_price: last, upper_rate: ur, avg_price: avg, percent: pc, data: items})
 
-                uppers.push(last > avg)
+                    uppers.push(last > avg)
 
-                const ur_ = ur == 1?0.99:ur
-                this.upRateDistru[Math.floor(ur_*10)] += 1
-            })
+                    const ur_ = ur == 1?0.99:ur
+                    this.upRateDistru[Math.floor(ur_*10)] += 1
+                })
 
-            this.totalUpRate = uppers.reduce((p, c) => p + c, 0) / uppers.length
-
-            this.isloading = false
+                this.totalUpRate = uppers.reduce((p, c) => p + c, 0) / uppers.length
+                this.lastUpatedTime = new Date(ret.headers.date)
+            }finally{
+                this.isloading = false
+            }
+        
         },
         showDetailChart(name, data) {
             console.log(name)
@@ -207,7 +242,12 @@ export default {
             this.options.series = [{name: name, data: data.map(({timestamp, current}) => [timestamp, current])}, {name: `${name}_avg`, data: data.map(({timestamp, avg_price}) => [timestamp, avg_price])}]
             this.dialog = true
             console.log(this.expanded)
-        }
+        },
+        async getIndexes() {
+                const sql = `show tag values with key=index_code`
+                const ret = await this.axios.get('../influxdb/query', {params: {q: sql, db: 'index_info'}})
+                this.index_items = ret.data.results[0].series[0].values.map(x => x[1])
+        },
     }
 }
 </script>

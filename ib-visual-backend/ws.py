@@ -492,6 +492,7 @@ class IBWS:
         portfolioItem_handler = self.handle_portfolioItem_event()
         exec_handler = self.handle_exec_event()
         coroutine_handler = self.handle_coroutines()
+        global_check = self.global_check()
 
         # receive sigterm from docker to stop the loop
         if sys.platform == 'win32': # windows not support add_signal_handler
@@ -499,4 +500,4 @@ class IBWS:
         else:
             self.loop.add_signal_handler(signal.SIGTERM, self.handle_sigterm)
             
-        self.ib.run(coroutine_handler, *trade_handlers, position_handler, portfolioItem_handler, exec_handler, account_handler, self.global_check())
+        self.ib.run(coroutine_handler, *trade_handlers, position_handler, portfolioItem_handler, exec_handler, account_handler, global_check)

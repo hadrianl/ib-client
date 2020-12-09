@@ -30,7 +30,8 @@
             "program": "${workspaceRoot}/ib-visual-backend/record_index_contribution.py",
             "console": "integratedTerminal",
             "env": {
-                "RICURL": "https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00001",
+                "RICURL": "https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00001, https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00014",
+                "CAPURL":"http://www.aastocks.com/sc/stocks/market/index/hk-index-con.aspx?index=HSI&t=1&s=1&o=1&p=4&hk=0&export=1,http://www.aastocks.com/sc/stocks/market/index/hk-index-con.aspx?index=HSI&t=1&s=1&o=1&p=4&hk=0&export=1",
                 "INFLUXDB_HOST": "localhost",
                 "INFLUXDB_PORT": "8087",
             },

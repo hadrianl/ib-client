@@ -13,17 +13,19 @@ headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 
 def get_hk_minute(index_name):
 
-    if not 'component' in session:
+    if not ('components' in session and index_name in session['components']):
+        components = session.setdefault('components', {})
         ic = InfluxDBClient(current_app.influx_host, current_app.influx_port)
         ic.switch_database('index_info')
-        ret = ic.query("select last(contribution) from contribution where time > now() - 6h group by stock_code, stock_name")
+        ret = ic.query(f"select last(contribution) from contribution where time > now() - 6h and index_code='{index_name}' group by stock_code, stock_name")
         component = []
         for k in ret.keys():
             component.append((k[1]['stock_code'][2:-3], k[1]['stock_name']))
-        session['component'] = component
+        components[index_name] = component
 
     data = {}
-    for s, n in session['component']:
+
+    for s, n in session['components'][index_name]:
         ret = requests.get(minute_url, params={'symbol': s, 'period': '1d'}, headers=headers, cookies=session.get('xq_cookies'))
         if ret.ok:
             data[s] = ret.json()
@@ -33,7 +35,7 @@ def get_hk_minute(index_name):
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'test'
+app.config['SECRET_KEY'] = os.urandom(24)
 app.config['PERMANENT_SESSION_LIFETIME'] = dt.timedelta(days=1)
 with app.app_context():
     current_app.influx_host = os.environ.get('INFLUXDB_HOST', 'influxdb')
@@ -44,7 +46,6 @@ with app.app_context():
 def set_cookies():
     if not session.get('xq_cookies'):
         session['xq_cookies'] = requests.head(root_url, headers=headers).cookies.get_dict()
-        print(session['xq_cookies'])
 
 @app.route('/index/component/', methods=['GET'])
 def get_index_component_minutes():

@@ -1,23 +1,34 @@
 <template>
     <v-card align-stretch>
-    <v-tabs vertical>
-      <v-tab>
-        {{$t('analysisTab.trend')}}
-      </v-tab>
-      <v-tab>
-        {{$t('analysisTab.heatmap')}}
-      </v-tab>
-      <v-tab-item>
-        <v-card flat>
-            <highcharts ref='sc' :options="line_options"></highcharts>
-        </v-card>
-      </v-tab-item>
-      <v-tab-item>
-        <v-card flat>
-            <highcharts ref='tm' :options="treemap_options"></highcharts>
-        </v-card>
-      </v-tab-item>
-    </v-tabs>
+        <v-card-subtitle>
+            <v-col cols="2">
+                <v-select 
+                label="index symbol" 
+                v-model="index_symbol" 
+                @change="updateAll" 
+                :items="index_items"
+                dense
+                outlined></v-select>
+            </v-col>
+        </v-card-subtitle>
+        <v-tabs vertical>
+        <v-tab>
+            {{$t('analysisTab.trend')}}
+        </v-tab>
+        <v-tab>
+            {{$t('analysisTab.heatmap')}}
+        </v-tab>
+        <v-tab-item>
+            <v-card flat>
+                <highcharts ref='sc' :options="line_options"></highcharts>
+            </v-card>
+        </v-tab-item>
+        <v-tab-item>
+            <v-card flat>
+                <highcharts ref='tm' :options="treemap_options"></highcharts>
+            </v-card>
+        </v-tab-item>
+        </v-tabs>
   </v-card>
 </template>
 <script>
@@ -28,13 +39,15 @@ export default {
             return {
                 // window: 0,
                 // influxclient: null,
+                index_symbol: '',
+                index_items: [],
                 line_options: {
                     chart: {
                         height: window.innerHeight - 100,
                         spacingRight: 50,
                     },
                     title: {
-                        text: 'HSI贡献度趋势',
+                        text: '贡献度趋势',
                     },
                     credits: {
                         enabled: false,
@@ -67,7 +80,7 @@ export default {
                         spacingRight: 50,
                     },
                     title: {
-                        text: 'HSI贡献度热力图',
+                        text: '贡献度热力图',
                     },
                     credits: {
                         enabled: false,
@@ -89,9 +102,9 @@ export default {
             // const port = 8087
             // const database = 'index_info'
             // this.influxclient = new InfluxDB({host, port, database})
-            await this.getStockCapital()
-            await this.updateLine()
-            await this.updateHeatMap()
+            await this.getIndexes()
+            this.index_symbol = this.index_items[1]
+            await this.updateAll()
             this.intervalTimer = setInterval(async () => {
                 await this.updateLine()
                 await this.updateHeatMap()
@@ -100,14 +113,20 @@ export default {
             console.log(this)
         },
         methods: {
+            async updateAll() {
+                console.log('updateAll')
+                await this.getStockCapital()
+                await this.updateLine()
+                await this.updateHeatMap()
+            },
             async updateHeatMap() {
                 // console.log('updateHeatMap')
-                const query_last_sql = "select last(contribution), time from contribution where index_code='HSI' group by stock_code, stock_name"
+                const query_last_sql = `select last(contribution), time from contribution where index_code='${this.index_symbol}' group by stock_code, stock_name`
                 const ret = await this.axios.get('../influxdb/query', {params: {q: query_last_sql, db: 'index_info'}})
 
                 let treemap = {
                         type: "treemap",
-                        name: "HSI",
+                        name: this.index_symbol,
                         layoutAlgorithm: 'squarified',
                         alternateStartingDirection: true,
                         tooltip: {
@@ -125,7 +144,7 @@ export default {
 
             },
             async updateLine() {
-                const sql = "select contribution from contribution where index_code='HSI' and time > now() - 6h group by stock_code, stock_name"
+                const sql = `select contribution from contribution where index_code='${this.index_symbol}' and time > now() - 6h group by stock_code, stock_name`
 
                 const ret = await this.axios.get('../influxdb/query', {params: {q: sql, db: 'index_info'}})
 
@@ -153,6 +172,11 @@ export default {
 
                 caps.forEach(({stock_code}, i) => this.capitals[stock_code] = i)
 
+            },
+            async getIndexes() {
+                const sql = `show tag values with key=index_code`
+                const ret = await this.axios.get('../influxdb/query', {params: {q: sql, db: 'index_info'}})
+                this.index_items = ret.data.results[0].series[0].values.map(x => x[1])
             },
             onTreeMapMouseOver() {
 

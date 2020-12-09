@@ -8,6 +8,10 @@ import os
 import re
 from functools import reduce
 import pandas as pd
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def convert(raw):
@@ -41,76 +45,80 @@ def cv(s):
 if __name__ == "__main__":
     host = os.environ.get('INFLUXDB_HOST', 'influxdb')
     port = os.environ.get('INFLUXDB_PORT', '8086')
-    url = os.environ.get('RICURL', 'https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00001')
-    cap_url = os.environ.get('CAPURL', 'http://www.aastocks.com/sc/stocks/market/index/hk-index-con.aspx?index=HSI&t=1&s=1&o=1&p=4&hk=0&export=1')
+    urls = os.environ.get('RICURL', 'https://www.hsi.com.hk/HSI-Net/HSI-Net?cmd=nxgenindex&index=00001')
+    cap_urls = os.environ.get('CAPURL', 'http://www.aastocks.com/sc/stocks/market/index/hk-index-con.aspx?index=HSI&t=1&s=1&o=1&p=4&hk=0&export=1')
     db_client = influxdb.InfluxDBClient(host, int(port))
     db_client.create_database('index_info')
     db_client.switch_database('index_info')
     
-    try:
-        table = pd.read_html(cap_url, header=0, index_col=0, converters={i:cv for i in [3, 4, 5, 8, 9]})[0]
-        points = []
-        for name_code, rows in table.iterrows():
-            name, code = name_code.split('  ')
-            points.append({
-                'measurement': 'stock_info',
-                'tags': {
-                    'stock_name': name,
-                    'stock_code': '00' + code,
-                },
-                'fields': {
-                    'price': rows['现价'],
-                    'capital': rows['市值'],
-                }
-            })
-        ret = db_client.write_points(points)
-        print(f'write stock info points result: {ret}')
-    except Exception as e:
-        print(f'get stock capital failed:{e}')
-
-    print(f'get url: {url}')
-    print('begin to record index contribution!')
-    while True:
+    for cap_url in cap_urls.split(','):
         try:
-            resp = requests.get(url)
-        except Exception as e:
-            print(f'fetch data failed: {e}')
-        else:
-            if resp.ok:
-                meta_data, data = convert(resp.text)
-                points = [
-                    {
-                        'measurement': 'index',
-                        'time': meta_data['datetime'],
-                        'tags': {
-                            'code': meta_data['code'],
-                        },
-                        'fields': {
-                            'last': meta_data['last'],
-                            'high': meta_data['high'],
-                            'low': meta_data['low'],
-                        }
-
+            table = pd.read_html(cap_url.strip(), header=0, index_col=0, converters={i:cv for i in [3, 4, 5, 8, 9]})[0]
+            points = []
+            for name_code, rows in table.iterrows():
+                name, code = name_code.split('  ')
+                points.append({
+                    'measurement': 'stock_info',
+                    'tags': {
+                        'stock_name': name,
+                        'stock_code': '00' + code,
+                    },
+                    'fields': {
+                        'price': rows['现价'],
+                        'capital': rows['市值'],
                     }
-                ]
-                for (index_name, index_code), cons in data.items():
-                    for (stock_name, stock_code), c in cons.items():
-                        point = {
-                            'measurement': 'contribution',
+                })
+            ret = db_client.write_points(points)
+            logger.debug(f'write stock info points result: {ret}')
+            logging.info(f'stored the capital of code successfully from {cap_url}!')
+        except Exception as e:
+            logger.error(f'get stock capital failed:{e}')
+
+    logger.debug(f'get urls: {urls}')
+    logger.debug('begin to record index contribution!')
+    while True:
+        for url in urls.split(','):
+            try:
+                resp = requests.get(url.strip())
+            except Exception as e:
+                logger.error(f'fetch data failed: {e}')
+            else:
+                if resp.ok:
+                    meta_data, data = convert(resp.text)
+                    points = [
+                        {
+                            'measurement': 'index',
                             'time': meta_data['datetime'],
                             'tags': {
-                                'index_name': index_name,
-                                'index_code': index_code,
-                                'stock_name': stock_name,
-                                'stock_code': stock_code,
+                                'code': meta_data['code'],
                             },
                             'fields': {
-                                'contribution': c,
+                                'last': meta_data['last'],
+                                'high': meta_data['high'],
+                                'low': meta_data['low'],
                             }
+
                         }
+                    ]
+                    for (index_name, index_code), cons in data.items():
+                        for (stock_name, stock_code), c in cons.items():
+                            point = {
+                                'measurement': 'contribution',
+                                'time': meta_data['datetime'],
+                                'tags': {
+                                    'index_name': index_name,
+                                    'index_code': index_code,
+                                    'stock_name': stock_name,
+                                    'stock_code': stock_code,
+                                },
+                                'fields': {
+                                    'contribution': c,
+                                }
+                            }
 
-                        points.append(point)
+                            points.append(point)
 
-                ret = db_client.write_points(points)
-                print(f'write index info points result: {ret}')
+                    ret = db_client.write_points(points)
+                    logger.debug(f'write index info points result: {ret}')
+                    logger.info(f'stored the contribution of stock successfully from {url}')
         time.sleep(60)
